@@ -46,11 +46,11 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2 — banco em memória exclusivo para testes automatizados -->
+        <!-- H2 — banco em memória para testes e perfil dev (deploy Render free tier) -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
