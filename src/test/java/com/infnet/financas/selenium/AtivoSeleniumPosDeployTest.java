@@ -84,7 +84,6 @@ class AtivoSeleniumPosDeployTest {
 
     private void takeScreenshot(String name) {
         try {
-            Thread.sleep(1000);
             File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
             String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
             String safeName = name.replaceAll("[^a-zA-Z0-9]", "_");

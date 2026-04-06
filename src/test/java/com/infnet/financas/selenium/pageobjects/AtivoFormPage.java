@@ -28,19 +28,10 @@ public class AtivoFormPage {
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
-    public void fillForm(String ticker, String name, String type, String category, String value, String quantity,
+    public void fillForm(String ticker, String type, String category, String value, String quantity,
             String date) {
-        new Select(driver.findElement(categorySelect)).selectByVisibleText(category);
-        try {
-            Thread.sleep(300);
-        } catch (InterruptedException ignored) {
-        }
-
-        new Select(driver.findElement(typeSelect)).selectByVisibleText(type);
-        try {
-            Thread.sleep(300);
-        } catch (InterruptedException ignored) {
-        }
+        new Select(wait.until(ExpectedConditions.elementToBeClickable(categorySelect))).selectByVisibleText(category);
+        new Select(wait.until(ExpectedConditions.elementToBeClickable(typeSelect))).selectByVisibleText(type);
 
         WebElement tickerElem = wait.until(ExpectedConditions.elementToBeClickable(tickerField));
         tickerElem.clear();

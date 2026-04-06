@@ -1,5 +1,5 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
   <body>
     <!--
   Componente: ticker
@@ -246,9 +246,9 @@
             fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,GBP-BRL')
               .then(function (r) { return r.json(); })
               .then(function (d) {
-                if (d.USDBRL) { setPrice('usd', fmtBRL(parseFloat(d.USDBRL.bid))); setPct('usd', parseFloat(d.USDBRL.pctChange)); }
-                if (d.EURBRL) { setPrice('eur', fmtBRL(parseFloat(d.EURBRL.bid))); setPct('eur', parseFloat(d.EURBRL.pctChange)); }
-                if (d.GBPBRL) { setPrice('gbp', fmtBRL(parseFloat(d.GBPBRL.bid))); setPct('gbp', parseFloat(d.GBPBRL.pctChange)); }
+                if (d.USDBRL) { setPrice('usd', fmtBRL(Number.parseFloat(d.USDBRL.bid))); setPct('usd', Number.parseFloat(d.USDBRL.pctChange)); }
+                if (d.EURBRL) { setPrice('eur', fmtBRL(Number.parseFloat(d.EURBRL.bid))); setPct('eur', Number.parseFloat(d.EURBRL.pctChange)); }
+                if (d.GBPBRL) { setPrice('gbp', fmtBRL(Number.parseFloat(d.GBPBRL.bid))); setPct('gbp', Number.parseFloat(d.GBPBRL.pctChange)); }
               })
               .catch(function () {});
           }

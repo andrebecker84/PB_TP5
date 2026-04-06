@@ -84,10 +84,9 @@ class AtivoSeleniumTest {
 
     private void takeScreenshot(String name) {
         try {
-            // Aguarda animações (como as do Chart.js) terminarem antes do print
-            Thread.sleep(1500);
-
             JavascriptExecutor js = (JavascriptExecutor) driver;
+            // Aguarda o document estar pronto antes de capturar a screenshot
+            wait.until(d -> js.executeScript("return document.readyState").equals("complete"));
 
             // Força renderização do gráfico se necessário e rola para o topo primeiro
             js.executeScript("window.scrollTo(0, 0)");
@@ -126,7 +125,7 @@ class AtivoSeleniumTest {
         AtivoFormPage formPage = listPage.clickNewAsset();
 
         String ticker = "ETH" + System.currentTimeMillis();
-        formPage.fillForm(ticker, "Ethereum", "CRIPTOMOEDA", "CRIPTODIVISA", "15000.50", "2.5", "2024-02-18");
+        formPage.fillForm(ticker, "CRIPTOMOEDA", "CRIPTODIVISA", "15000.50", "2.5", "2024-02-18");
 
         takeScreenshot("shouldRegisterNewAsset_FormFilled");
 
@@ -147,7 +146,7 @@ class AtivoSeleniumTest {
         driver.get(baseUrl + "/novo");
         AtivoFormPage formPage = new AtivoFormPage(driver);
         String ticker = "EDIT" + System.currentTimeMillis();
-        formPage.fillForm(ticker, "To Edit", "ACAO", "RENDA_VARIAVEL", "100.00", "1", "2024-02-18");
+        formPage.fillForm(ticker, "ACAO", "RENDA_VARIAVEL", "100.00", "1", "2024-02-18");
         formPage.submit();
 
         wait.until(ExpectedConditions.urlContains("/ativos"));
@@ -161,7 +160,7 @@ class AtivoSeleniumTest {
         editButton.click();
 
         formPage = new AtivoFormPage(driver);
-        formPage.fillForm(ticker, "Edited Name", "ACAO", "RENDA_VARIAVEL", "150.00", "1.5", "2024-02-18");
+        formPage.fillForm(ticker, "ACAO", "RENDA_VARIAVEL", "150.00", "1.5", "2024-02-18");
 
         takeScreenshot("shouldEditAsset_FormFilled");
 
@@ -184,7 +183,7 @@ class AtivoSeleniumTest {
 
         driver.get(baseUrl + "/novo");
         AtivoFormPage formPage = new AtivoFormPage(driver);
-        formPage.fillForm(ticker, "To Delete", "ACAO", "RENDA_VARIAVEL", "10.00", "1", "2024-02-18");
+        formPage.fillForm(ticker, "ACAO", "RENDA_VARIAVEL", "10.00", "1", "2024-02-18");
         formPage.submit();
 
         wait.until(ExpectedConditions.urlContains("/ativos"));
@@ -198,6 +197,7 @@ class AtivoSeleniumTest {
         try {
             driver.switchTo().alert().accept();
         } catch (Exception ignored) {
+            // Nenhuma caixa de diálogo exibida — comportamento esperado em alguns navegadores
         }
 
         AtivoListaPage listPage = new AtivoListaPage(driver);
@@ -261,7 +261,7 @@ class AtivoSeleniumTest {
 
         String ticker = "SESS" + System.currentTimeMillis();
         AtivoFormPage formPage = new AtivoFormPage(driver);
-        formPage.fillForm(ticker, "Session Test Asset", "ACAO", "RENDA_VARIAVEL", "100.00", "1", "2024-02-18");
+        formPage.fillForm(ticker, "ACAO", "RENDA_VARIAVEL", "100.00", "1", "2024-02-18");
         AtivoListaPage listPage = formPage.submit();
 
         // A mensagem de sucesso via flash attribute só é entregue se o JSESSIONID
@@ -285,13 +285,13 @@ class AtivoSeleniumTest {
 
         driver.get(baseUrl + "/novo");
         AtivoFormPage formPage = new AtivoFormPage(driver);
-        formPage.fillForm(ticker, "Solana", "CRIPTOMOEDA", "CRIPTODIVISA", "1000.00", "10", "2024-02-18");
+        formPage.fillForm(ticker, "CRIPTOMOEDA", "CRIPTODIVISA", "1000.00", "10", "2024-02-18");
         AtivoListaPage listPage = formPage.submit();
         assertThat(listPage.getSuccessMessage(), containsString("Ativo adicionado ao portfólio"));
 
         driver.get(baseUrl + "/novo");
         formPage = new AtivoFormPage(driver);
-        formPage.fillForm(ticker, "Solana Duplicate", "CRIPTOMOEDA", "CRIPTODIVISA", "2000.00", "20", "2024-02-18");
+        formPage.fillForm(ticker, "CRIPTOMOEDA", "CRIPTODIVISA", "2000.00", "20", "2024-02-18");
         takeScreenshot("shouldShowErrorForDuplicateTicker_FormFilled");
         formPage.submit();
 

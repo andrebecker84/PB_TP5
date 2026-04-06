@@ -37,6 +37,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+# Justificativa: elimina warning de deprecação do Node.js 20 nas GitHub Actions.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ────────────────────────────────────────────────────────────────────────────
   # Job 1 — Testes de Fumaça com Selenium

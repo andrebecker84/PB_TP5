@@ -112,8 +112,8 @@ class AtivoFinanceiroTest {
         assertEquals(a1.hashCode(), a2.hashCode());
         assertNotEquals(a1.hashCode(), a3.hashCode());
         assertEquals(a1, a1);
-        assertNotEquals(a1, null);
-        assertNotEquals(a1, "not an AtivoFinanceiro");
+        assertNotEquals(null, a1);
+        assertNotEquals("not an AtivoFinanceiro", a1);
     }
 
     @Test

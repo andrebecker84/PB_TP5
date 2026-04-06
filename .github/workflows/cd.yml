@@ -1,4 +1,4 @@
-# ──────────────────────────────────────────────────────────────────────────────
+a# ──────────────────────────────────────────────────────────────────────────────
 # CD — Entrega Contínua · SAIKOO (PB_TP5)
 #
 # Justificativa: pipeline de CD empacota e promove o artefato pelos ambientes
@@ -49,6 +49,10 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
+
+# Justificativa: elimina warning de deprecação do Node.js 20 nas GitHub Actions.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ────────────────────────────────────────────────────────────────────────────

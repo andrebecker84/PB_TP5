@@ -57,7 +57,7 @@ class CenariosAdversosTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldCompleteOperationWithinReasonableTimeUnderLatency() {
         when(repository.existsById(anyLong())).thenAnswer(inv -> {
-            Thread.sleep(100); // Simula latência de rede de 100ms
+            Thread.sleep(100); // NOSONAR - intencional: simula latência de rede para validar o @Timeout
             return false;
         });
 

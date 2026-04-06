@@ -54,7 +54,10 @@ public class AtivoFinanceiroService {
     @Transactional
     public AtivoFinanceiro update(Long id, AtivoFinanceiro detalhesAtivo) {
         log.info("Tentativa de atualizar ativo ID={} para ticker={}", id, detalhesAtivo.getTicker());
-        AtivoFinanceiro ativo = findById(id);
+        // Justificativa: chama o repositório diretamente (não via this.findById) para que o
+        // proxy Spring AOP do @Transactional desta própria chamada seja preservado.
+        AtivoFinanceiro ativo = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Ativo não encontrado com ID: " + id));
 
         boolean tickerAlterado = !ativo.getTicker().equals(detalhesAtivo.getTicker());
         if (tickerAlterado && repository.existsByTicker(detalhesAtivo.getTicker())) {

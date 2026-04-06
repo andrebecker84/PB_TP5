@@ -1,4 +1,6 @@
+<!DOCTYPE html>
 <html
+  lang="pt-BR"
   xmlns:th="http://www.thymeleaf.org"
   th:replace="~{layout :: layout(~{::title}, ~{::content}, ~{::scripts})}"
 >
@@ -413,7 +415,7 @@
         }
 
         // Inicialização para caso de Edição ou Erros de Validação
-        window.addEventListener("DOMContentLoaded", () => {
+        globalThis.addEventListener("DOMContentLoaded", () => {
           if (categoryEl.value) {
             updateAssetTypes(true);
           } else {

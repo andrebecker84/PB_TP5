@@ -2,6 +2,7 @@ package com.infnet.financas.controller;
 
 import com.infnet.financas.exception.RecursoDuplicadoException;
 import com.infnet.financas.model.AtivoFinanceiro;
+import com.infnet.financas.model.AtivoFinanceiroForm;
 import com.infnet.financas.service.AtivoFinanceiroService;
 import com.infnet.financas.service.AtivoFinanceiroService.DashboardMetrics;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +25,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AtivoController {
 
     private final AtivoFinanceiroService service;
+
+    private static final String FORM_VIEW        = "ativo-form";
+    private static final String SUCCESS_MSG       = SUCCESS_MSG;
+    private static final String REDIRECT_ATIVOS   = REDIRECT_ATIVOS;
 
     @ModelAttribute("requestURI")
     public String requestURI(HttpServletRequest request) {
@@ -52,60 +57,60 @@ public class AtivoController {
 
     @GetMapping("/novo")
     public String exibirFormularioCriacao(Model model) {
-        model.addAttribute("ativo", new AtivoFinanceiro());
+        model.addAttribute("ativo", new AtivoFinanceiroForm());
         popularModelFormulario(model);
-        return "ativo-form";
+        return FORM_VIEW;
     }
 
     @PostMapping
-    public String salvarAtivo(@Valid @ModelAttribute("ativo") AtivoFinanceiro ativo,
+    public String salvarAtivo(@Valid @ModelAttribute("ativo") AtivoFinanceiroForm form,
             BindingResult result, Model model, RedirectAttributes ra) {
         if (result.hasErrors()) {
             popularModelFormulario(model);
-            return "ativo-form";
+            return FORM_VIEW;
         }
         try {
-            service.save(ativo);
-            ra.addFlashAttribute("successMessage", "Ativo adicionado ao portfólio!");
-            return "redirect:/ativos";
+            service.save(form.toEntity());
+            ra.addFlashAttribute(SUCCESS_MSG, "Ativo adicionado ao portfólio!");
+            return REDIRECT_ATIVOS;
         } catch (RecursoDuplicadoException e) {
             model.addAttribute("errorMessage", e.getMessage());
             popularModelFormulario(model);
-            return "ativo-form";
+            return FORM_VIEW;
         }
     }
 
     @GetMapping("/editar/{id}")
     public String exibirFormularioEdicao(@PathVariable Long id, Model model) {
-        model.addAttribute("ativo", service.findById(id));
+        model.addAttribute("ativo", AtivoFinanceiroForm.from(service.findById(id)));
         popularModelFormulario(model);
-        return "ativo-form";
+        return FORM_VIEW;
     }
 
     @PostMapping("/{id}")
     public String atualizarAtivo(@PathVariable Long id,
-            @Valid @ModelAttribute("ativo") AtivoFinanceiro ativo,
+            @Valid @ModelAttribute("ativo") AtivoFinanceiroForm form,
             BindingResult result, Model model, RedirectAttributes ra) {
         if (result.hasErrors()) {
             popularModelFormulario(model);
-            return "ativo-form";
+            return FORM_VIEW;
         }
         try {
-            service.update(id, ativo);
-            ra.addFlashAttribute("successMessage", "Ativo atualizado!");
-            return "redirect:/ativos";
+            service.update(id, form.toEntity());
+            ra.addFlashAttribute(SUCCESS_MSG, "Ativo atualizado!");
+            return REDIRECT_ATIVOS;
         } catch (RecursoDuplicadoException e) {
             model.addAttribute("errorMessage", e.getMessage());
             popularModelFormulario(model);
-            return "ativo-form";
+            return FORM_VIEW;
         }
     }
 
     @GetMapping("/excluir/{id}")
     public String excluirAtivo(@PathVariable Long id, RedirectAttributes ra) {
         service.delete(id);
-        ra.addFlashAttribute("successMessage", "Ativo removido!");
-        return "redirect:/ativos";
+        ra.addFlashAttribute(SUCCESS_MSG, "Ativo removido!");
+        return REDIRECT_ATIVOS;
     }
 
     /**

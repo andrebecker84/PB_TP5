@@ -655,4 +655,4 @@
       chart.update();
     }
   };
-})(window.__SAIKOO_ATIVOS__, window.__SAIKOO_ALOCACAO__);
+})(globalThis.__SAIKOO_ATIVOS__, globalThis.__SAIKOO_ALOCACAO__);

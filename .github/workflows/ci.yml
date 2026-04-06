@@ -37,6 +37,12 @@ permissions:
   contents: read
   security-events: write
 
+# Justificativa: opta antecipadamente pelo Node.js 24 para eliminar warnings de
+# deprecação do Node.js 20 nas actions de checkout, setup-java e upload-artifact.
+# O Node.js 20 será removido dos runners em setembro de 2026.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ────────────────────────────────────────────────────────────────────────────
   # Job 1 — Testes Unitários, de Integração, Cobertura JaCoCo e SAST

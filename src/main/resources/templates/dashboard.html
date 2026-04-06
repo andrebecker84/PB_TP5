@@ -1,5 +1,6 @@
 <!doctype html>
 <html
+  lang="pt-BR"
   xmlns:th="http://www.thymeleaf.org"
   th:replace="~{layout :: layout(~{::title}, ~{::content}, ~{::scripts})}"
 >
@@ -51,8 +52,8 @@
     <!-- Scripts específicos do Dashboard -->
     <th:block th:fragment="scripts">
       <script th:inline="javascript">
-        window.__SAIKOO_ATIVOS__ = /*[[${ativos}]]*/ [];
-        window.__SAIKOO_ALOCACAO__ = /*[[${alocacaoPorTipo}]]*/ {};
+        globalThis.__SAIKOO_ATIVOS__ = /*[[${ativos}]]*/ [];
+        globalThis.__SAIKOO_ALOCACAO__ = /*[[${alocacaoPorTipo}]]*/ {};
       </script>
       <script th:src="@{/js/dashboard-charts.js}"></script>
     </th:block>
