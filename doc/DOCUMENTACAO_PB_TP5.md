@@ -54,10 +54,12 @@ O TP5 é a **entrega final** do projeto, incorporando:
 | Workflows | 2 (`ci.yml`, `cd.yml`) | 3 (+ `post-deploy.yml`) |
 | Ambientes de deploy | — | dev, staging, prod |
 | Aprovação manual | — | obrigatória para prod |
-| Análise de segurança | — | SAST com CodeQL v4 (build-mode: none) |
+| SAST | — | CodeQL v4 (build-mode: none) + SonarCloud |
+| DAST | — | OWASP ZAP Baseline Scan (varredura passiva) |
 | Testes pós-deploy | — | `AtivoSeleniumPosDeployTest` em staging |
 | Resumo de resultados | logs do runner | Markdown em `$GITHUB_STEP_SUMMARY` |
-| Refatorações | Estruturais (TP4) | Imutabilidade + polimorfismo (TP5) |
+| Refatorações | Estruturais (TP4) | Imutabilidade + polimorfismo + DTO (TP5) |
+| Segurança de formulários | entidade JPA exposta | DTO `AtivoFinanceiroForm` — sem mass assignment |
 | Hospedagem | — | Render free tier via Docker multi-stage |
 
 ---
@@ -73,6 +75,7 @@ O TP5 aplica refatorações orientadas à imutabilidade, polimorfismo e reduçã
 | Condicionais aninhadas | Blocos `if-else` encadeados no service para validações | Cláusulas de guarda (early return) — fluxo principal sem indentação excessiva | Clean Code (Martin) |
 | Código morto | Métodos e campos não referenciados remanescentes do TP3 | Remoção completa — nenhum campo ou método sem uso no classpath | YAGNI · Clean Code |
 | Separação consulta/modificador | Métodos que retornavam valor e modificavam estado simultaneamente | Separação explícita seguindo CQS: consultas não têm efeitos colaterais; modificadores não retornam valor | CQS (Meyer) |
+| Segurança de formulários | Entidade JPA `AtivoFinanceiro` recebida diretamente como `@ModelAttribute` | DTO `AtivoFinanceiroForm` com apenas os campos editáveis pelo usuário — `id` nunca exposto ao binding HTTP | Segurança · SRP · DTO pattern |
 
 Cada refatoração foi validada pela suíte de testes, garantindo que nenhum comportamento externo foi alterado.
 
@@ -93,7 +96,7 @@ src/main/java/com/infnet/financas/
 ├── controller/     # Roteamento HTTP — zero lógica de negócio
 ├── service/        # Regras de negócio + DashboardMetrics record (Java 21)
 ├── repository/     # Spring Data JPA
-├── model/          # Entidade JPA + enums + getPrecoMedio()
+├── model/          # AtivoFinanceiro (entidade JPA) + AtivoFinanceiroForm (DTO)
 └── exception/      # Exceções de domínio + handler global
 ```
 
@@ -155,17 +158,18 @@ push / pull_request
 │  Job 1: testes-unitarios-integracao                  │
 │  Timeout: 15 minutos                                 │
 │                                                      │
-│  1. Checkout do repositório                          │
+│  1. Checkout completo (fetch-depth: 0)               │
 │  2. Setup Java 21 (Eclipse Temurin) + cache Maven    │
 │  3. mvn -B clean verify                              │
 │     -Dtest="!AtivoSeleniumTest"                      │
 │     ├── compila o projeto                            │
 │     ├── executa 50+ testes                           │
 │     └── jacoco:check — falha se < 90%                │
-│  4. Análise SAST com CodeQL                          │
-│  5. Upload: surefire-reports (14 dias)               │
-│  6. Upload: jacoco-coverage-report (14 dias)         │
-│  7. Resumo Markdown ($GITHUB_STEP_SUMMARY)           │
+│  4. SAST — CodeQL v4 (build-mode: none)              │
+│  5. SAST + qualidade — SonarCloud                    │
+│  6. Upload: surefire-reports (14 dias)               │
+│  7. Upload: jacoco-coverage-report (14 dias)         │
+│  8. Resumo Markdown ($GITHUB_STEP_SUMMARY)           │
 └──────────────────────┬───────────────────────────────┘
                        │ needs — só avança se job 1 passou
                        ▼
@@ -179,11 +183,27 @@ push / pull_request
 │     └── Chrome headless (config. no teste)           │
 │  4. Upload: selenium-screenshots (14 dias)           │
 │     (if: always — inclui falhas)                     │
+└──────────────────────┬───────────────────────────────┘
+                       │ needs — só avança se job 1 passou
+                       ▼
+┌──────────────────────────────────────────────────────┐
+│  Job 3: dast                                         │
+│  Timeout: 15 minutos                                 │
+│                                                      │
+│  1. Checkout do repositório                          │
+│  2. Setup Java 21 + cache Maven                      │
+│  3. mvn -B clean package -DskipTests                 │
+│  4. java -jar saikoo-*.jar (perfil dev — H2) &       │
+│  5. Health check (até 90s) em localhost:8080         │
+│  6. OWASP ZAP Baseline Scan (varredura passiva)      │
+│     └── alvo: http://172.17.0.1:8080                 │
+│  7. Upload: zap-dast-report (14 dias)                │
+│  8. Resumo Markdown ($GITHUB_STEP_SUMMARY)           │
 └──────────────────────────────────────────────────────┘
 ```
 
-**Por que dois jobs separados?**
-Separar testes unitários/integração dos E2E permite feedback rápido sobre a lógica de negócio sem depender de browser. Se o service ou controller quebrar, o job 1 falha em menos de 2 minutos e o job 2 nem é iniciado — economizando recursos do runner.
+**Por que três jobs separados?**
+Job 1 valida qualidade e segurança estática. Job 2 valida fluxos E2E no browser. Job 3 executa análise dinâmica contra a aplicação em execução. A separação garante feedback granular: se a lógica de negócio quebrar, o job 1 sinaliza sem desperdiçar tempo em Selenium ou DAST.
 
 **Artefatos publicados a cada execução:**
 
@@ -192,6 +212,7 @@ Separar testes unitários/integração dos E2E permite feedback rápido sobre a 
 | `surefire-reports` | Relatórios XML de cada classe de teste | 14 dias |
 | `jacoco-coverage-report` | Relatório HTML de cobertura de linhas | 14 dias |
 | `selenium-screenshots` | Capturas de tela dos testes E2E | 14 dias |
+| `zap-dast-report` | Relatório HTML do OWASP ZAP com alertas de segurança | 14 dias |
 
 ---
 
@@ -498,7 +519,33 @@ O aumento reflete a maturidade do projeto na fase de entrega final. Com o códig
 
 ### Artefatos com retenção diferenciada
 
-Surefire, JaCoCo e screenshots: 14 dias — suficiente para revisão de PR. JAR no CD: 30 dias — cobre um sprint completo e permite rollback sem recriar o artefato.
+Surefire, JaCoCo, screenshots e relatório ZAP: 14 dias — suficiente para revisão de PR. JAR no CD: 30 dias — cobre um sprint completo e permite rollback sem recriar o artefato.
+
+### DTO `AtivoFinanceiroForm` para eliminar mass assignment
+
+**Problema:** receber a entidade JPA `AtivoFinanceiro` diretamente como `@ModelAttribute` expõe o campo `id` ao binding HTTP. Um usuário mal-intencionado poderia forjar um POST com `id` arbitrário e sobrescrever registros de outros usuários.
+
+**Solução:** `AtivoFinanceiroForm` é um DTO com apenas os campos editáveis pelo usuário. O controller converte o form para entidade via `form.toEntity()` antes de chamar o service. O `id` nunca chega ao binding HTTP.
+
+```
+POST /ativos
+  → AtivoFinanceiroForm (sem id)
+  → form.toEntity()
+  → AtivoFinanceiro (sem id — gerado pelo banco)
+  → service.save(ativo)
+```
+
+### `fetch-depth: 0` no checkout do CI
+
+**Problema:** o GitHub Actions faz shallow clone por padrão (depth=1). O SonarCloud precisa do histórico completo para atribuir issues via `git blame` e calcular métricas de SCM.
+
+**Solução:** `fetch-depth: 0` no step de checkout do job 1 garante clone completo apenas onde necessário.
+
+### `sonar.sources` incluindo `src/main/resources`
+
+**Problema:** sem essa configuração, o SonarCloud não indexa os templates Thymeleaf e não detecta vulnerabilidades XSS nos templates HTML.
+
+**Solução:** `sonar.sources=src/main/java,src/main/resources` no `pom.xml` inclui os templates na análise.
 
 ---
 
@@ -541,6 +588,7 @@ git push origin v2.0.0
 | Relatórios Surefire | Aba Actions → surefire-reports | CI Job 1 |
 | Cobertura JaCoCo | Aba Actions → jacoco-coverage-report | CI Job 1 |
 | Screenshots Selenium (CI) | Aba Actions → selenium-screenshots | CI Job 2 |
+| Relatório DAST (ZAP) | Aba Actions → zap-dast-report | CI Job 3 |
 | Screenshots Pós-deploy | Aba Actions → screenshots-pos-deploy | post-deploy |
 | JAR executável | Aba Actions → saikoo-jar | CD Job 1 |
 | GitHub Release | Aba Releases | CD Job 5 (em tags) |
@@ -607,6 +655,9 @@ _Evidência a ser inserida após execução no GitHub Actions._
 - GitHub Actions — OIDC: https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect
 - GitHub Actions — Job Summaries: https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions#adding-a-job-summary
 - CodeQL Documentation: https://codeql.github.com/docs/
+- SonarCloud Documentation: https://docs.sonarsource.com/sonarcloud/
+- OWASP ZAP Documentation: https://www.zaproxy.org/docs/
+- OWASP ZAP GitHub Action: https://github.com/zaproxy/action-baseline
 - Spring Boot Reference Documentation: https://docs.spring.io/spring-boot/docs/3.3.0/reference/html/
 - JaCoCo Documentation: https://www.jacoco.org/jacoco/trunk/doc/
 - Selenium WebDriver Documentation: https://www.selenium.dev/documentation/webdriver/

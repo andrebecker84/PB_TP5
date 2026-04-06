@@ -67,12 +67,14 @@ push / pull_request
         │
         ▼
   Job 1: testes-unitarios-integracao   (timeout: 15 min)
+  ├── Checkout completo (fetch-depth: 0 — histórico para SonarCloud)
   ├── Setup Java 21 (Temurin) + cache Maven
   ├── mvn -B clean verify -Dtest="!AtivoSeleniumTest"
   │   ├── compila o projeto
   │   ├── executa 50+ testes unitários e de integração
   │   └── JaCoCo gate — falha o build se cobertura < 90%
-  ├── Análise SAST (CodeQL)
+  ├── Análise SAST com CodeQL v4 (build-mode: none)
+  ├── Análise SAST + qualidade com SonarCloud
   ├── Upload: surefire-reports + jacoco-coverage-report
   └── Resumo Markdown ($GITHUB_STEP_SUMMARY)
         │
@@ -147,7 +149,11 @@ Dispara automaticamente após o CD concluir deploy em staging.
 | OIDC para deploy | Elimina segredos de longa duração para autenticação com provedores de nuvem |
 | Ambientes com proteção | `production` exige aprovação manual — nenhum deploy automático em prod |
 | Resumos Markdown (`$GITHUB_STEP_SUMMARY`) | Resultados de testes e cobertura visíveis diretamente na UI do GitHub |
-| SAST com CodeQL | Vulnerabilidades detectadas no CI antes de qualquer merge |
+| SAST com CodeQL v4 | Vulnerabilidades de segurança detectadas no CI antes de qualquer merge |
+| SAST + qualidade com SonarCloud | Code smells, duplicação, complexidade e cobertura integrada ao GitHub |
+| DAST com OWASP ZAP | Vulnerabilidades em runtime detectadas por varredura passiva |
+| DTO `AtivoFinanceiroForm` | Elimina mass assignment — entidade JPA não exposta diretamente ao formulário |
+| `fetch-depth: 0` no checkout | Histórico completo para o SonarCloud atribuir issues via git blame |
 | Logs personalizados | `logback-spring.xml` com perfis e arquivo rotativo `saikoo-<data>.log` |
 | `-B` em todos os `mvn` | Logs limpos no runner — sem ANSI colors e sem prompts interativos |
 | `concurrency` com cancel | Cancela runs obsoletos em feature branches; preserva execuções em main |
@@ -193,8 +199,9 @@ O perfil `dev` é ativado via variável de ambiente `SPRING_PROFILES_ACTIVE=dev`
 | Testes | Selenium WebDriver | 4.21.0 | Automação E2E no browser e pós-deploy |
 | Testes | Jqwik | 1.8.5 | Property-based e fuzz testing |
 | Testes | JaCoCo | 0.8.12 | Cobertura de código (mínimo 90%) |
-| Segurança | CodeQL | — | Análise estática de segurança (SAST) |
-| Segurança | OWASP ZAP | — | Análise dinâmica de segurança (DAST) |
+| Segurança | CodeQL | v4 | SAST — vulnerabilidades de segurança (CWE) |
+| Segurança | SonarCloud | — | SAST + qualidade — code smells, duplicação, cobertura |
+| Segurança | OWASP ZAP | — | DAST — varredura dinâmica passiva em runtime |
 | CI/CD | GitHub Actions | — | CI — build, testes, cobertura, SAST |
 | CI/CD | GitHub Actions | — | CD — deploy multi-ambiente, release |
 | CI/CD | GitHub Actions | — | Pós-deploy — Selenium em staging |
@@ -211,7 +218,7 @@ src/main/java/com/infnet/financas/
 ├── controller/     # Roteamento HTTP — zero lógica de negócio
 ├── service/        # Regras de negócio + DashboardMetrics (Java 21 record)
 ├── repository/     # Spring Data JPA
-├── model/          # Entidade JPA + enums aninhados + getPrecoMedio()
+├── model/          # AtivoFinanceiro (entidade JPA) + AtivoFinanceiroForm (DTO)
 └── exception/      # Exceções de domínio + @ControllerAdvice global
 ```
 
