@@ -54,10 +54,11 @@ O TP5 é a **entrega final** do projeto, incorporando:
 | Workflows | 2 (`ci.yml`, `cd.yml`) | 3 (+ `post-deploy.yml`) |
 | Ambientes de deploy | — | dev, staging, prod |
 | Aprovação manual | — | obrigatória para prod |
-| Análise de segurança | — | SAST com CodeQL |
+| Análise de segurança | — | SAST com CodeQL v4 (build-mode: none) |
 | Testes pós-deploy | — | `AtivoSeleniumPosDeployTest` em staging |
 | Resumo de resultados | logs do runner | Markdown em `$GITHUB_STEP_SUMMARY` |
 | Refatorações | Estruturais (TP4) | Imutabilidade + polimorfismo (TP5) |
+| Hospedagem | — | Render free tier via Docker multi-stage |
 
 ---
 
@@ -355,13 +356,39 @@ No CI: cancela execuções desatualizadas em branches de feature, mas não na `m
 
 ## 6. Deploy Multi-Ambiente
 
-O TP5 configura três ambientes no GitHub com regras de proteção distintas:
+O TP5 configura três ambientes no GitHub com regras de proteção distintas e hospeda a aplicação no **Render** (free tier) via **Docker multi-stage**.
+
+### Ambientes GitHub
 
 | Ambiente | Branch/Tag Fonte | Aprovação Manual | Proteções |
 | -------- | ---------------- | ---------------- | --------- |
 | `dev` | `main` | Não | Nenhuma restrição — integração rápida |
 | `staging` | tags `v*.*.*-rc*` | Não | Requer CI verde; dispara pós-deploy |
 | `production` | tags `v*.*.*` | Sim (reviewer) | Requer staging verde + aprovação |
+
+### Hospedagem — Render
+
+O deploy é realizado via **webhook** do Render (Deploy Hook), disparado pelo CD através do secret `DEV_DEPLOY_URL`. A aplicação roda em container Docker construído pelo `Dockerfile` multi-stage na raiz do projeto:
+
+```dockerfile
+# Estágio 1 — build
+FROM maven:3.9-eclipse-temurin-21-alpine AS build
+# ...mvn clean package -DskipTests
+
+# Estágio 2 — execução mínima
+FROM eclipse-temurin:21-jre-alpine
+COPY --from=build /app/target/saikoo-*.jar app.jar
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+O perfil `dev` é ativado via variável de ambiente `SPRING_PROFILES_ACTIVE=dev`, usando H2 em memória com dados populados por `data-dev.sql` a cada startup.
+
+### Limitações do free tier
+
+| Limitação | Comportamento |
+| --------- | ------------- |
+| Hibernação | O serviço hiberna após 15 min sem requisições. O primeiro acesso após inatividade leva 30–50 segundos — o serviço permanece disponível e responde normalmente após o wake-up. |
+| Banco em memória | O H2 é reinicializado a cada restart. Os dados são sempre restaurados automaticamente pelo `data-dev.sql`, garantindo consistência para avaliação. Alterações feitas via interface não são persistidas entre reinicializações. |
 
 ### Autenticação OIDC
 
@@ -379,7 +406,7 @@ Ao invés de segredos de longa duração (service account keys), o CD utiliza OI
 
 | Tipo | Onde definido | O que armazena |
 | ---- | ------------- | -------------- |
-| `secrets.*` | Configuração do repositório / ambiente | Credenciais OIDC, tokens de deploy |
+| `secrets.*` | Configuração do repositório / ambiente | Deploy Hook URLs, URL da aplicação |
 | `env.*` | Arquivo de workflow (`env:` global ou por job) | URLs de ambiente, flags de configuração |
 | `vars.*` | Configuração do repositório | Valores não-sensíveis reutilizáveis |
 

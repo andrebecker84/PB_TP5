@@ -31,6 +31,7 @@
 
 - [Sobre o Projeto](#sobre-o-projeto)
 - [Pipeline CI/CD](#pipeline-cicd)
+- [Deploy](#deploy)
 - [Tecnologias](#tecnologias)
 - [Arquitetura](#arquitetura)
 - [Testes e Cobertura](#testes-e-cobertura)
@@ -144,6 +145,29 @@ Dispara automaticamente após o CD concluir deploy em staging.
 
 ---
 
+## Deploy
+
+A aplicação está disponível em produção no Render (free tier):
+
+| Ambiente | URL | Trigger |
+| -------- | --- | ------- |
+| dev | `https://saikoo.onrender.com` | Automático — todo merge em main |
+| staging | — | Tags `v*.*.*-rc*` |
+| production | `https://saikoo.onrender.com` | Tags `v*.*.*` + aprovação manual |
+
+O deploy utiliza **Docker multi-stage** (`Dockerfile` na raiz): estágio de build com `maven:3.9-eclipse-temurin-21-alpine` e imagem de execução com `eclipse-temurin:21-jre-alpine`.
+
+O perfil `dev` é ativado via variável de ambiente `SPRING_PROFILES_ACTIVE=dev` no Render, usando H2 em memória com dados populados por `data-dev.sql` a cada startup.
+
+### Limitações do free tier
+
+| Limitação | Comportamento |
+| --------- | ------------- |
+| Hibernação | O serviço hiberna após 15 min sem requisições. O primeiro acesso após inatividade pode levar 30–50 segundos para responder — o serviço permanece disponível. |
+| Banco em memória | O H2 é reinicializado a cada restart. Os dados são sempre restaurados automaticamente pelo `data-dev.sql`, garantindo consistência para avaliação. |
+
+---
+
 ## Tecnologias
 
 | Categoria | Tecnologia | Versão | Uso |
@@ -162,6 +186,7 @@ Dispara automaticamente após o CD concluir deploy em staging.
 | CI/CD | GitHub Actions | — | CI — build, testes, cobertura, SAST |
 | CI/CD | GitHub Actions | — | CD — deploy multi-ambiente, release |
 | CI/CD | GitHub Actions | — | Pós-deploy — Selenium em staging |
+| Deploy | Render | free tier | Hospedagem via Docker multi-stage |
 
 ---
 
@@ -272,7 +297,7 @@ PB_TP5/
 │   └── workflows/
 │       ├── ci.yml                 # Pipeline CI (build, testes, SAST, cobertura)
 │       ├── cd.yml                 # Pipeline CD (deploy multi-ambiente, release)
-│       └── post-deploy.yml        # Testes pós-deploy Selenium em staging
+│       ├── post-deploy.yml        # Testes pós-deploy Selenium em staging
 ├── doc/
 │   ├── DOCUMENTACAO_PB_TP5.md
 │   └── images/
@@ -290,7 +315,10 @@ PB_TP5/
 │   │       ├── templates/
 │   │       ├── static/
 │   │       ├── logback-spring.xml
-│   │       └── application.properties
+│   │       ├── application.properties
+│   │       ├── application-dev.properties # Perfil dev — H2 em memória
+│   │       ├── data.sql                   # Dados iniciais (PostgreSQL)
+│   │       └── data-dev.sql               # Dados iniciais (H2 / perfil dev)
 │   └── test/
 │       └── java/com/infnet/financas/
 │           ├── SaikooApplicationTest.java
@@ -299,6 +327,7 @@ PB_TP5/
 │               ├── AtivoSeleniumTest.java
 │               ├── AtivoSeleniumPosDeployTest.java
 │               └── pageobjects/
+├── Dockerfile
 ├── pom.xml
 ├── LICENSE
 └── README.md
