@@ -91,6 +91,18 @@ jobs:
         with:
           category: "/language:java"
 
+      # Justificativa: SonarCloud complementa o CodeQL com análise de qualidade
+      # de código (code smells, duplicação, complexidade ciclomática) e SAST
+      # adicional. Executado após `mvn verify` para importar o relatório JaCoCo
+      # e exibir cobertura de testes no dashboard do SonarCloud.
+      # GITHUB_TOKEN: necessário para o SonarCloud decorar PRs com comentários.
+      # SONAR_TOKEN: autenticação na API do SonarCloud (secret do repositório).
+      - name: Análise SonarCloud (SAST + qualidade de código)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B sonar:sonar
+
       # Justificativa: publicar relatórios como artefatos permite auditoria pós-build
       # sem necessidade de reexecutar o pipeline. Retenção de 14 dias é suficiente
       # para revisão de PRs sem sobrecarregar o storage.
@@ -193,3 +205,100 @@ jobs:
           echo "| Testes E2E | ${TOTAL:-N/A} | Falhas: ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Screenshots disponíveis em: [selenium-screenshots]" >> $GITHUB_STEP_SUMMARY
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 3 — DAST com OWASP ZAP (Análise Dinâmica de Segurança)
+  #
+  # Justificativa: DAST complementa o SAST (CodeQL) ao detectar vulnerabilidades
+  # em runtime — injeção, headers de segurança ausentes, exposição de dados —
+  # que análise estática não consegue identificar. O ZAP faz uma varredura
+  # passiva (baseline scan) contra a aplicação em execução, sem ataques ativos,
+  # adequado para CI sem risco de efeitos colaterais.
+  #
+  # Estratégia de execução:
+  #   1. Empacota o JAR (sem testes — já validados no job 1)
+  #   2. Inicia a aplicação em background com perfil dev (H2 em memória)
+  #   3. Aguarda o health check antes de iniciar o scan
+  #   4. ZAP escaneia via Docker interno do runner (acessa o host pelo IP da bridge)
+  #   5. Relatório HTML publicado como artefato para auditoria
+  #
+  # Justificativa do `fail_action: false`: o ZAP reporta alertas de baixa
+  # severidade esperados em qualquer app (ex: ausência de CSP em ambiente dev).
+  # Falhar o build por esses alertas seria ruído — o relatório é o valor real.
+  # ────────────────────────────────────────────────────────────────────────────
+  dast:
+    name: DAST — OWASP ZAP (Análise Dinâmica de Segurança)
+    runs-on: ubuntu-latest
+    needs: testes-unitarios-integracao   # executa somente se job 1 passar
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write   # Justificativa: necessário para o ZAP publicar alertas como issues
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Empacotar aplicação para DAST
+        run: mvn -B clean package -DskipTests
+
+      # Justificativa: a aplicação sobe com perfil dev (H2 em memória) para
+      # não depender de banco externo. O `&` inicia em background; o PID é
+      # salvo para encerramento limpo ao final do job.
+      - name: Iniciar aplicação em background (perfil dev)
+        run: |
+          java -jar target/saikoo-*.jar \
+            --spring.profiles.active=dev \
+            --server.port=8080 &
+          echo "APP_PID=$!" >> $GITHUB_ENV
+
+      # Justificativa: aguarda até 90 segundos para a aplicação estar pronta
+      # antes de iniciar o scan. Sem este passo, o ZAP escanearia uma aplicação
+      # ainda inicializando e produziria falsos negativos.
+      - name: Aguardar aplicação estar pronta (health check)
+        run: |
+          echo "Aguardando aplicação subir em http://localhost:8080..."
+          for i in $(seq 1 18); do
+            if curl -sf http://localhost:8080/ativos/dashboard > /dev/null 2>&1; then
+              echo "::notice::Aplicação pronta após $((i * 5))s."
+              break
+            fi
+            echo "Tentativa $i/18 — aguardando 5s..."
+            sleep 5
+          done
+
+      # Justificativa: o ZAP roda dentro de um container Docker no runner.
+      # Para acessar o host (onde a aplicação está), usamos o IP da bridge
+      # Docker (172.17.0.1), que é o gateway padrão do Docker no Linux.
+      # O `action-baseline` faz apenas varredura passiva (sem ataques ativos).
+      - name: Executar OWASP ZAP Baseline Scan (DAST)
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: 'http://172.17.0.1:8080'
+          fail_action: false
+          artifact_name: zap-dast-report
+          issue_title: 'DAST — OWASP ZAP: Alertas de Segurança'
+
+      - name: Encerrar aplicação
+        if: always()
+        run: kill "$APP_PID" 2>/dev/null || true
+
+      - name: Publicar resumo DAST no GitHub Actions
+        if: always()
+        run: |
+          echo "## DAST — OWASP ZAP" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Campo | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "| ----- | ----- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Alvo | http://localhost:8080 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tipo de scan | Baseline (passivo — sem ataques ativos) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Relatório | [zap-dast-report] |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Alertas detalhados disponíveis no artefato [zap-dast-report]." >> $GITHUB_STEP_SUMMARY

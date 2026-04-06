@@ -14,6 +14,9 @@
 ![Jqwik](https://img.shields.io/badge/Jqwik-1.8.5-purple)
 ![JaCoCo](https://img.shields.io/badge/JaCoCo-≥90%25-brightgreen)
 ![CI](https://github.com/andrebecker84/PB_TP5/actions/workflows/ci.yml/badge.svg)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=andrebecker84_PB_TP5&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=andrebecker84_PB_TP5)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=andrebecker84_PB_TP5&metric=coverage)](https://sonarcloud.io/summary/new_code?id=andrebecker84_PB_TP5)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=andrebecker84_PB_TP5&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=andrebecker84_PB_TP5)
 ![CD](https://github.com/andrebecker84/PB_TP5/actions/workflows/cd.yml/badge.svg)
 ![Release](https://img.shields.io/github/v/release/andrebecker84/PB_TP5?label=release&color=blue)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?logo=readme&logoColor=white)](LICENSE)
@@ -79,6 +82,14 @@ push / pull_request
   ├── mvn -B test -Dtest=AtivoSeleniumTest
   │   └── Chrome headless (configurado no próprio teste)
   └── Upload: selenium-screenshots  (if: always)
+        │
+        │ (needs — só avança se job 1 passou)
+        ▼
+  Job 3: dast   (timeout: 15 min)
+  ├── Empacota JAR + inicia aplicação em background (perfil dev)
+  ├── Health check (aguarda aplicação estar pronta)
+  ├── OWASP ZAP Baseline Scan (varredura passiva)
+  └── Upload: zap-dast-report  (if: always)
 ```
 
 ### CD — Entrega Contínua (`cd.yml`)
@@ -183,6 +194,7 @@ O perfil `dev` é ativado via variável de ambiente `SPRING_PROFILES_ACTIVE=dev`
 | Testes | Jqwik | 1.8.5 | Property-based e fuzz testing |
 | Testes | JaCoCo | 0.8.12 | Cobertura de código (mínimo 90%) |
 | Segurança | CodeQL | — | Análise estática de segurança (SAST) |
+| Segurança | OWASP ZAP | — | Análise dinâmica de segurança (DAST) |
 | CI/CD | GitHub Actions | — | CI — build, testes, cobertura, SAST |
 | CI/CD | GitHub Actions | — | CD — deploy multi-ambiente, release |
 | CI/CD | GitHub Actions | — | Pós-deploy — Selenium em staging |

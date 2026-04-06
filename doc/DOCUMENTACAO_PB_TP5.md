@@ -340,11 +340,30 @@ No CI: cancela execuções desatualizadas em branches de feature, mas não na `m
 
 **Solução aplicada:** CI declara `permissions: contents: read`. O job de release declara `permissions: contents: write` apenas onde necessário.
 
-### 5.6. Análise de Segurança SAST (CodeQL)
+### 5.6. Análise de Segurança SAST (CodeQL) e DAST (OWASP ZAP)
 
-**Problema sem esta prática:** Vulnerabilidades introduzidas no código passam despercebidas até análise manual ou incidente em produção.
+**Problema sem estas práticas:** Vulnerabilidades introduzidas no código (SAST) e em runtime (DAST) passam despercebidas até análise manual ou incidente em produção.
 
-**Solução aplicada:** O CI executa análise CodeQL sobre o código Java a cada push e PR. O resultado é publicado na aba Security > Code scanning alerts do repositório.
+**SAST — CodeQL:** O CI executa análise CodeQL sobre o bytecode Java a cada push e PR com `build-mode: none`. O resultado é publicado na aba Security > Code scanning alerts do repositório.
+
+**SAST + Qualidade — SonarCloud:** Complementa o CodeQL com análise de qualidade de código — code smells, duplicação, complexidade ciclomática e bugs lógicos. Importa o relatório JaCoCo para exibir cobertura no dashboard. Integrado ao GitHub via `GITHUB_TOKEN` (decoração automática de PRs) e autenticado via `SONAR_TOKEN` (secret do repositório). Resultados visíveis em `sonarcloud.io/project/overview?id=andrebecker84_PB_TP5`.
+
+**DAST — OWASP ZAP:** O CI empacota o JAR, inicia a aplicação em background com perfil dev (H2) e executa o OWASP ZAP Baseline Scan — varredura passiva que detecta vulnerabilidades em runtime (headers ausentes, exposição de dados, configurações inseguras) sem ataques ativos. O relatório HTML é publicado como artefato `zap-dast-report` a cada execução.
+
+```
+Job 1: testes-unitarios-integracao
+  ├── mvn clean verify (testes + JaCoCo)
+  ├── CodeQL (SAST — vulnerabilidades de segurança)
+  ├── SonarCloud (SAST + qualidade de código)
+  └── Upload: surefire-reports, jacoco-coverage-report
+
+Job 3: dast
+  ├── mvn -B clean package -DskipTests
+  ├── java -jar saikoo-*.jar --spring.profiles.active=dev &
+  ├── health check (até 90s)
+  ├── OWASP ZAP Baseline Scan → http://172.17.0.1:8080
+  └── Upload: zap-dast-report (artefato HTML)
+```
 
 ### 5.7. Resumos Markdown (`$GITHUB_STEP_SUMMARY`)
 
@@ -450,6 +469,9 @@ O `README.md` exibe badges em tempo real:
 | CD | GitHub Actions | Status da última execução do `cd.yml` |
 | Release | GitHub | Última tag publicada |
 | JaCoCo | Badge estático | Meta de cobertura (≥ 90%) |
+| Quality Gate | SonarCloud | Qualidade geral do código (passed/failed) |
+| Coverage | SonarCloud | Cobertura de testes importada do JaCoCo |
+| Security Rating | SonarCloud | Rating de segurança (A–E) |
 
 ---
 
