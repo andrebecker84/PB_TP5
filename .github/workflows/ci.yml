@@ -81,13 +81,13 @@ jobs:
       # Evita o erro "could not process any source code" causado pela ordem de
       # execução (init após build) e elimina um build redundante.
       - name: Inicializar CodeQL (SAST)
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: java
           build-mode: none
 
       - name: Executar análise CodeQL
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:java"
 
