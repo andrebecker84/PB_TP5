@@ -24,6 +24,8 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.projectKey>andrebecker84_PB_TP5</sonar.projectKey>
         <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.sources>src/main/java,src/main/resources</sonar.sources>
+        <sonar.tests>src/test/java</sonar.tests>
     </properties>
 
     <dependencies>

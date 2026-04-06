@@ -52,8 +52,13 @@ jobs:
                           # limite de 6h do runner. 15 min é 3× o tempo médio esperado.
 
     steps:
+      # Justificativa: `fetch-depth: 0` desativa o shallow clone para que o
+      # SonarCloud tenha acesso ao histórico completo do git — necessário para
+      # atribuição automática de issues (git blame) e métricas de SCM.
       - name: Checkout do repositório
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Justificativa: Temurin é a distribuição OpenJDK recomendada pela comunidade
       # para CI por ser mantida pela Eclipse Foundation com suporte LTS garantido.
