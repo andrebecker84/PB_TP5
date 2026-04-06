@@ -1,0 +1,427 @@
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layout :: layout(~{::title}, ~{::content}, ~{::scripts})}"
+>
+  <head>
+    <title
+      th:fragment="title"
+      th:text="${ativo.id == null ? 'Novo Ativo' : 'Editar Ativo'} + ' | SAIKOO'"
+    ></title>
+  </head>
+  <body>
+    <div th:fragment="content">
+      <div class="form-overlay">
+        <div class="form-container">
+          <div class="card p-4 p-md-5 modal-glass shadow-2xl border-0">
+            <a href="/ativos" class="btn-close-custom" aria-label="Fechar">
+              <i class="bi bi-x-lg"></i>
+            </a>
+
+            <!-- Cabeçalho do formulário -->
+            <div class="d-flex align-items-center mb-4">
+              <div class="bg-primary bg-opacity-10 p-3 rounded-4 me-3">
+                <i
+                  class="bi bi-plus-square text-primary fs-2"
+                  th:if="${ativo.id == null}"
+                ></i>
+                <i
+                  class="bi bi-pencil-square text-primary fs-2"
+                  th:if="${ativo.id != null}"
+                ></i>
+              </div>
+              <div>
+                <h2
+                  class="fw-bold mb-0 text-white"
+                  th:text="${ativo.id == null ? 'Novo Investimento' : 'Editar Ativo'}"
+                ></h2>
+                <p class="text-white-50 mb-0 small">
+                  Forneça os detalhes da sua operação financeira
+                </p>
+              </div>
+            </div>
+
+            <!-- Formulário -->
+            <form
+              th:action="${ativo.id == null ? '/ativos' : '/ativos/' + ativo.id}"
+              th:object="${ativo}"
+              method="post"
+              id="assetForm"
+            >
+              <input type="hidden" th:field="*{id}" />
+
+              <div class="row g-4">
+                <!-- 1. Categoria (Primeiro passo) -->
+                <div class="col-md-6">
+                  <label
+                    for="category"
+                    class="form-label text-uppercase small fw-bold"
+                    >1. Categoria</label
+                  >
+                  <select
+                    id="category"
+                    class="form-select form-select-lg bg-dark border-secondary text-white"
+                    th:field="*{categoria}"
+                    onchange="updateAssetTypes()"
+                  >
+                    <option value="">Selecione a Categoria...</option>
+                    <option
+                      th:each="c : ${categorias}"
+                      th:value="${c}"
+                      th:text="${c}"
+                    ></option>
+                  </select>
+                </div>
+
+                <!-- 2. Tipo (Libera após Categoria) -->
+                <div class="col-md-6">
+                  <label
+                    for="type"
+                    class="form-label text-uppercase small fw-bold"
+                    >2. Tipo de Ativo</label
+                  >
+                  <select
+                    id="type"
+                    class="form-select form-select-lg bg-dark border-secondary text-white"
+                    th:field="*{tipo}"
+                    onchange="handleTypeChange()"
+                  >
+                    <option value="">Selecione o Tipo...</option>
+                    <option
+                      th:each="t : ${tipos}"
+                      th:value="${t}"
+                      th:text="${t}"
+                    ></option>
+                  </select>
+                </div>
+
+                <!-- 3. Ticker (Libera após Tipo) -->
+                <div class="col-md-6">
+                  <label
+                    for="ticker"
+                    class="form-label text-uppercase small fw-bold"
+                    >3. Ticker / Código</label
+                  >
+                  <input
+                    type="text"
+                    id="ticker"
+                    list="ticker-suggestions"
+                    class="form-control form-control-lg bg-dark border-secondary text-white"
+                    th:field="*{ticker}"
+                    th:classappend="${#fields.hasErrors('ticker')} ? 'is-invalid' : ''"
+                    placeholder="Selecione o tipo primeiro"
+                    oninput="autoFillName()"
+                  />
+                  <datalist id="ticker-suggestions"></datalist>
+                  <div
+                    class="invalid-feedback"
+                    th:if="${#fields.hasErrors('ticker')}"
+                    th:errors="*{ticker}"
+                  ></div>
+                </div>
+
+                <!-- 4. Nome (Auto-preenchimento recomendado) -->
+                <div class="col-md-6">
+                  <label
+                    for="name"
+                    class="form-label text-uppercase small fw-bold"
+                    >4. Nome do Ativo</label
+                  >
+                  <input
+                    type="text"
+                    id="name"
+                    class="form-control form-control-lg bg-dark border-secondary text-white-50"
+                    th:field="*{nome}"
+                    th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid' : ''"
+                    placeholder="Auto-preenchido pelo sistema"
+                    readonly
+                    style="
+                      cursor: not-allowed;
+                      background-color: rgba(0, 0, 0, 0.2) !important;
+                    "
+                  />
+                  <div
+                    class="invalid-feedback"
+                    th:if="${#fields.hasErrors('nome')}"
+                    th:errors="*{nome}"
+                  ></div>
+                </div>
+
+                <!-- Dados Adicionais -->
+                <div class="col-md-4">
+                  <label
+                    for="investedValue"
+                    class="form-label text-uppercase small fw-bold"
+                    >Total (R$)</label
+                  >
+                  <div class="input-group">
+                    <span
+                      class="input-group-text border-secondary bg-dark text-white"
+                      >R$</span
+                    >
+                    <input
+                      type="number"
+                      step="0.01"
+                      id="investedValue"
+                      class="form-control form-control-lg bg-dark border-secondary text-white"
+                      th:field="*{valorInvestido}"
+                      th:classappend="${#fields.hasErrors('valorInvestido')} ? 'is-invalid' : ''"
+                    />
+                  </div>
+                  <div
+                    class="invalid-feedback d-block"
+                    th:if="${#fields.hasErrors('valorInvestido')}"
+                    th:errors="*{valorInvestido}"
+                  ></div>
+                </div>
+
+                <div class="col-md-4">
+                  <label
+                    for="quantity"
+                    class="form-label text-uppercase small fw-bold"
+                    >Quantidade</label
+                  >
+                  <input
+                    type="number"
+                    step="any"
+                    id="quantity"
+                    class="form-control form-control-lg bg-dark border-secondary text-white"
+                    th:field="*{quantidade}"
+                    th:classappend="${#fields.hasErrors('quantidade')} ? 'is-invalid' : ''"
+                  />
+                  <div
+                    class="invalid-feedback"
+                    th:if="${#fields.hasErrors('quantidade')}"
+                    th:errors="*{quantidade}"
+                  ></div>
+                </div>
+
+                <div class="col-md-4">
+                  <label
+                    for="lastOperationDate"
+                    class="form-label text-uppercase small fw-bold"
+                    >Data</label
+                  >
+                  <input
+                    type="date"
+                    id="lastOperationDate"
+                    class="form-control form-control-lg bg-dark border-secondary text-white"
+                    th:field="*{dataUltimaOperacao}"
+                    th:classappend="${#fields.hasErrors('dataUltimaOperacao')} ? 'is-invalid' : ''"
+                  />
+                  <div
+                    class="invalid-feedback"
+                    th:if="${#fields.hasErrors('dataUltimaOperacao')}"
+                    th:errors="*{dataUltimaOperacao}"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Ações -->
+              <div
+                class="mt-5 d-grid g-2 d-md-flex justify-content-md-end gap-3"
+              >
+                <a
+                  href="/ativos"
+                  class="btn btn-outline-danger rounded-3 py-3 px-4 d-flex align-items-center"
+                >
+                  <i class="bi bi-trash me-2"></i> Cancelar
+                </a>
+                <button
+                  type="reset"
+                  class="btn btn-outline-warning rounded-3 py-3 px-4 d-flex align-items-center"
+                  onclick="resetFlow()"
+                >
+                  <i class="bi bi-eraser-fill me-2"></i> Limpar
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn-primary btn-lg rounded-3 py-3 px-5 shadow-lg d-flex align-items-center"
+                >
+                  <i class="bi bi-check-lg me-2"></i> Confirmar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts específicos do formulário -->
+    <th:block th:fragment="scripts">
+      <script th:inline="javascript">
+        /* Mapeamento: categoria -> tipos disponíveis */
+        const categoryToTypes = {
+          RENDA_VARIAVEL: ["ACAO", "FII", "ETF"],
+          RENDA_FIXA: ["RENDA_FIXA", "PRECATORIO"],
+          ATIVO_REAL: ["IMOVEL", "TERRENO_AGRO", "EQUIPAMENTO_PESADO", "OURO"],
+          CRIPTODIVISA: ["CRIPTOMOEDA"],
+        };
+
+        /* Sugestões de ticker por tipo */
+        const typeToTickers = {
+          OURO: ["XAU", "XAUUSD", "OZ", "AU", "GC=F", "GOLD11"],
+          CRIPTOMOEDA: ["BTC", "ETH", "SOL", "USDT", "BNB"],
+          ACAO: [
+            "PETR4",
+            "VALE3",
+            "ITUB4",
+            "AAPL",
+            "MSFT",
+            "SANB11",
+            "TSLA",
+            "AMZN",
+            "NVDA",
+            "GOOGL",
+          ],
+          FII: ["MXRF11", "HGLG11", "KNRI11"],
+          ETF: ["IVVB11", "BOVA11", "SMAL11"],
+          RENDA_FIXA: ["TESOURO_SELIC", "TESOURO_IPCA", "CDB_BANCO_X"],
+          PRECATORIO: ["PREC_FED_2024", "PREC_EST_SP"],
+          IMOVEL: ["APTO_SP", "CASA_PRAIA", "SALA_COMERCIAL"],
+          TERRENO_AGRO: ["FAZENDA_SOJA", "SITIO_LAZER"],
+          EQUIPAMENTO_PESADO: ["TRATOR_JOHN_DEERE", "COLHEITADEIRA"],
+        };
+
+        /* Nome sugerido por tipo */
+        const typeToNames = {
+          OURO: "Ouro Spot / Onça Troy",
+          CRIPTOMOEDA: "Criptomoeda",
+          RENDA_FIXA: "Título de Renda Fixa",
+          IMOVEL: "Imóvel Residencial/Comercial",
+          TERRENO_AGRO: "Fazenda / Terreno Agrícola",
+          EQUIPAMENTO_PESADO: "Trator / Máquina Pesada",
+          ACAO: "Ação (Nacional / Internacional)",
+          FII: "Fundo de Investimento Imobiliário",
+          ETF: "Exchange Traded Fund",
+          PRECATORIO: "Precatório Judicial",
+        };
+
+        /* Nome Sugerido por Ticker (Convenção de Mercado Real) */
+        const tickerToNames = {
+          // Ações
+          PETR4: "Petróleo Brasileiro S.A. - Petrobras",
+          VALE3: "Vale S.A.",
+          ITUB4: "Itaú Unibanco Holding S.A.",
+          AAPL: "Apple Inc.",
+          MSFT: "Microsoft Corporation",
+          TSLA: "Tesla, Inc.",
+          AMZN: "Amazon.com, Inc.",
+          NVDA: "NVIDIA Corporation",
+          GOOGL: "Alphabet Inc. (Google)",
+          SANB11: "Banco Santander (Brasil) S.A.",
+          BBAS3: "Banco do Brasil S.A.",
+          WEGE3: "WEG S.A.",
+          // Cripto
+          BTC: "Bitcoin",
+          ETH: "Ethereum",
+          SOL: "Solana",
+          USDT: "Tether USD",
+          BNB: "Binance Coin",
+          ADA: "Cardano",
+          // FIIs
+          MXRF11: "Maxi Renda FII",
+          HGLG11: "CSHG Logística FII",
+          KNRI11: "Kinea Renda Imobiliária FII",
+          XPLG11: "XP Log FII",
+          // ETFs
+          IVVB11: "iShares S&P 500 Fundo de Índice",
+          BOVA11: "iShares Ibovespa Fundo de Índice",
+          SMAL11: "iShares Small Cap Fundo de Índice",
+          // Renda Fixa / Ouro
+          TESOURO_SELIC: "Tesouro Selic",
+          TESOURO_IPCA: "Tesouro IPCA+",
+          XAU: "Ouro (XAU)",
+          XAUUSD: "Ouro vs USD",
+          GOLD11: "Trend Ouro Fundo de Índice",
+        };
+
+        const categoryEl = document.getElementById("category");
+        const typeEl = document.getElementById("type");
+        const tickerEl = document.getElementById("ticker");
+        const nameEl = document.getElementById("name");
+
+        function updateAssetTypes(keepValue = false) {
+          const category = categoryEl.value;
+          const currentValue = typeEl.value;
+
+          typeEl.innerHTML = '<option value="">Selecione o Tipo...</option>';
+
+          if (!keepValue) tickerEl.value = ""; // Limpa ticker ao mudar categoria
+
+          if (!category) {
+            typeEl.disabled = true;
+            tickerEl.disabled = true;
+            return;
+          }
+
+          typeEl.disabled = false;
+          (categoryToTypes[category] || []).forEach((type) => {
+            const opt = document.createElement("option");
+            opt.value = opt.text = type;
+            typeEl.appendChild(opt);
+          });
+
+          if (keepValue) typeEl.value = currentValue;
+          handleTypeChange(keepValue);
+        }
+
+        function handleTypeChange(keepValue = false) {
+          const type = typeEl.value;
+          const datalist = document.getElementById("ticker-suggestions");
+
+          if (!keepValue) tickerEl.value = ""; // Limpa ticker ao mudar tipo
+
+          datalist.innerHTML = "";
+          if (!type) {
+            tickerEl.disabled = true;
+            return;
+          }
+
+          tickerEl.disabled = false;
+          (typeToTickers[type] || []).forEach((ticker) => {
+            const opt = document.createElement("option");
+            opt.value = ticker;
+            datalist.appendChild(opt);
+          });
+
+          // Atualiza o nome sempre que o tipo mudar
+          autoFillName();
+        }
+
+        function autoFillName() {
+          const ticker = tickerEl.value.toUpperCase();
+          const type = typeEl.value;
+
+          // Prioridade 1: Ticker conhecido no mercado real
+          if (tickerToNames[ticker]) {
+            nameEl.value = tickerToNames[ticker];
+            return;
+          }
+
+          // Prioridade 2: Nome genérico do tipo (para códigos desconhecidos)
+          if (type && typeToNames[type]) {
+            nameEl.value = typeToNames[type];
+          } else {
+            nameEl.value = "";
+          }
+        }
+
+        function resetFlow() {
+          setTimeout(() => {
+            updateAssetTypes();
+          }, 10);
+        }
+
+        // Inicialização para caso de Edição ou Erros de Validação
+        window.addEventListener("DOMContentLoaded", () => {
+          if (categoryEl.value) {
+            updateAssetTypes(true);
+          } else {
+            typeEl.disabled = true;
+            tickerEl.disabled = true;
+          }
+        });
+      </script>
+    </th:block>
+  </body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!--
+  Componente: dashboard/chart-evolution
+  Linha com gráfico de Evolução do Patrimônio (line) + Alocação por Tipo (donut).
+  Os canvas são referenciados pelo dashboard-charts.js.
+-->
+    <div th:fragment="chart-evolution" class="row g-4 mb-4">
+      <!-- Evolução do Patrimônio — Line Chart -->
+      <div class="col-lg-8">
+        <div class="card p-4 h-100 border-0 shadow-sm">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <p class="dash-title mb-0">Evolução do Patrimônio</p>
+            <div class="dropdown">
+              <button
+                class="btn btn-sm btn-outline-secondary dropdown-toggle border-0 opacity-75"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Mês
+              </button>
+              <ul
+                class="dropdown-menu dropdown-menu-end dropdown-glass shadow-lg border-0"
+              >
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('lineChart', 'day');
+                      return false;
+                    "
+                    >Intraday</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('lineChart', 'week');
+                      return false;
+                    "
+                    >1S</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('lineChart', 'month');
+                      return false;
+                    "
+                    >1M</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('lineChart', '6months');
+                      return false;
+                    "
+                    >6M</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('lineChart', 'year');
+                      return false;
+                    "
+                    >1A</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div style="height: 350px"><canvas id="lineChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Alocação por Tipo — Donut Chart -->
+      <div class="col-lg-4">
+        <div class="card p-4 h-100 border-0 shadow-sm">
+          <p class="dash-title mb-3">Alocação por Tipo</p>
+          <div style="height: 350px; position: relative">
+            <canvas id="donutChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

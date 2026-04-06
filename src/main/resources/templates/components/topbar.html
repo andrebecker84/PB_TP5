@@ -1,0 +1,38 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!--
+  Componente: topbar
+  Header fixo superior com pesquisa, notificações e perfil.
+-->
+    <header th:fragment="topbar" class="top-header">
+      <div><!-- reservado para breadcrumb futuro --></div>
+
+      <div class="d-flex align-items-center gap-4">
+        <div class="search-bar">
+          <i class="bi bi-search me-2"></i>
+          <span class="small">Pesquisar...</span>
+        </div>
+
+        <div class="d-flex gap-3 text-muted">
+          <i class="bi bi-bell fs-5" title="Notificações"></i>
+          <i class="bi bi-chat-dots fs-5" title="Mensagens"></i>
+        </div>
+
+        <div class="user-profile">
+          <span class="text-white me-2 fw-semibold small">André B.</span>
+          <div
+            class="user-avatar"
+            style="
+              background-image: url(&quot;https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.2.1&auto=format&fit=crop&w=256&h=256&q=80&quot;);
+              background-size: cover;
+              background-position: center;
+              border: 1.5px solid rgba(255, 255, 255, 0.1);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            "
+          ></div>
+        </div>
+      </div>
+    </header>
+  </body>
+</html>

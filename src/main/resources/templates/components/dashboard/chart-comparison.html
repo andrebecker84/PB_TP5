@@ -1,0 +1,188 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!--
+  Componente: dashboard/chart-comparison
+  Linha com 3 colunas iguais:
+    - Comparativo Criptomoedas (Top 5) — line chart
+    - Comparativo Ações (Top 5)        — line chart
+    - Valor Investido (Top 10)         — bar chart
+  Os canvas são referenciados pelo dashboard-charts.js.
+-->
+    <div th:fragment="chart-comparison" class="row g-4 mb-5">
+      <!-- Comparativo — Criptomoedas -->
+      <div class="col-lg-4">
+        <div class="card p-4 h-100 border-0 shadow-sm">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <p class="dash-title mb-0">
+              <i class="bi bi-currency-bitcoin me-1"></i>Desempenho Cripto (Top 5)
+            </p>
+            <div class="dropdown">
+              <button
+                class="btn btn-sm btn-outline-secondary dropdown-toggle border-0 opacity-75"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Mês
+              </button>
+              <ul
+                class="dropdown-menu dropdown-menu-end dropdown-glass shadow-lg border-0"
+              >
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('cryptoComparisonChart', 'day');
+                      return false;
+                    "
+                    >Intraday</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('cryptoComparisonChart', 'week');
+                      return false;
+                    "
+                    >1S</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('cryptoComparisonChart', 'month');
+                      return false;
+                    "
+                    >1M</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('cryptoComparisonChart', '6months');
+                      return false;
+                    "
+                    >6M</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('cryptoComparisonChart', 'year');
+                      return false;
+                    "
+                    >1A</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div style="height: 350px">
+            <canvas id="cryptoComparisonChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparativo — Ações -->
+      <div class="col-lg-4">
+        <div class="card p-4 h-100 border-0 shadow-sm">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <p class="dash-title mb-0">
+              <i class="bi bi-graph-up-arrow me-1"></i>Desempenho Ações (Top 5)
+            </p>
+            <div class="dropdown">
+              <button
+                class="btn btn-sm btn-outline-secondary dropdown-toggle border-0 opacity-75"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Mês
+              </button>
+              <ul
+                class="dropdown-menu dropdown-menu-end dropdown-glass shadow-lg border-0"
+              >
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('acaoComparisonChart', 'day');
+                      return false;
+                    "
+                    >Intraday</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('acaoComparisonChart', 'week');
+                      return false;
+                    "
+                    >1S</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('acaoComparisonChart', 'month');
+                      return false;
+                    "
+                    >1M</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('acaoComparisonChart', '6months');
+                      return false;
+                    "
+                    >6M</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item small py-2"
+                    href="#"
+                    onclick="
+                      updateChartPeriod('acaoComparisonChart', 'year');
+                      return false;
+                    "
+                    >1A</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div style="height: 350px">
+            <canvas id="acaoComparisonChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Valor Investido por Ativo -->
+      <div class="col-lg-4">
+        <div class="card p-4 h-100 border-0 shadow-sm">
+          <p class="dash-title mb-3">Valor Investido (Top 10)</p>
+          <div style="height: 350px"><canvas id="barChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

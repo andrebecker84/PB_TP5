@@ -1,0 +1,75 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!--
+  Componente: sidebar
+  Barra lateral de navegação da aplicação.
+  Depende de: ${requestURI} — URI atual para destacar o item ativo no menu.
+-->
+    <aside th:fragment="sidebar" class="sidebar">
+      <div class="logo-area">
+        <div class="logo-icon"><i class="bi bi-infinity"></i></div>
+        <span class="logo-name">
+          SAIK<i
+            class="bi bi-infinity"
+            style="
+              margin-left: 2px;
+              font-size: 1.45rem;
+              -webkit-text-stroke: 1.5px currentColor;
+              display: inline-flex;
+              align-items: center;
+              margin-top: -1px;
+            "
+          ></i>
+        </span>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            th:href="@{/ativos/dashboard}"
+            th:classappend="${requestURI != null && requestURI.contains('dashboard')} ? 'active-custom' : ''"
+          >
+            <i class="bi bi-grid"></i><span>Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            th:href="@{/ativos}"
+            th:classappend="${requestURI != null && (requestURI.endsWith('/ativos') || requestURI.contains('/editar/') || requestURI.contains('/novo'))} ? 'active-custom' : ''"
+          >
+            <i class="bi bi-wallet2"></i><span>Portfólio</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#"
+            ><i class="bi bi-pie-chart"></i><span>Análises</span></a
+          >
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#"
+            ><i class="bi bi-lightning-charge"></i><span>Insights</span></a
+          >
+        </li>
+      </ul>
+
+      <div class="sidebar-divider mt-4"><span>GERAL</span></div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a class="nav-link" href="#"
+            ><i class="bi bi-gear"></i><span>Configurações</span></a
+          >
+        </li>
+      </ul>
+
+      <div class="upgrade-card mt-auto">
+        <div class="mb-2"><i class="bi bi-stars text-warning fs-4"></i></div>
+        <h6 class="fw-bold mb-1">Seja Pro</h6>
+        <p class="small text-muted mb-3">Organize melhor seus dados</p>
+        <a href="#" class="btn btn-primary btn-sm w-100">Fazer Upgrade</a>
+      </div>
+    </aside>
+  </body>
+</html>

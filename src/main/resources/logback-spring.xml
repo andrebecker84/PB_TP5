@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <!-- Captura o instante de inicialização da JVM — um arquivo de log por execução -->
+  <timestamp key="startupTime" datePattern="yyyyMMdd-HHmm"/>
+
+  <!-- ── Console: apenas WARN, ERROR e FATAL ── -->
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <encoder>
+      <pattern>%d{HH:mm:ss} %-5level %logger{0} — %msg%n</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+  </appender>
+
+  <!-- ── Arquivo: INFO e acima, nome fixado no startup (ex: saikoo-20260322-1940.log) ── -->
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>logs/saikoo-${startupTime}.log</file>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{50} — %msg%n</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+  </appender>
+
+  <!-- ── Logger da aplicação (INFO no arquivo, WARN no console) ── -->
+  <logger name="com.infnet.financas" level="INFO" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+  </logger>
+
+  <!-- ── Root: INFO → arquivo; console filtrado em WARN pelo appender ── -->
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+  </root>
+
+</configuration>

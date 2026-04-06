@@ -1,0 +1,264 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!--
+  Componente: ticker
+  Faixa de cotações com scroll contínuo. Dados crypto/forex atualizados em
+  tempo real via CoinGecko (crypto) e AwesomeAPI BR (câmbio).
+  Pausa automática ao posicionar o cursor sobre o ticker.
+-->
+    <div th:fragment="ticker" class="ticker-container py-0 shadow-sm">
+      <div class="ticker-scroll-area">
+        <div class="ticker-wrapper">
+
+          <!-- ── Bloco principal ── -->
+          <div class="ticker-item">
+            <span class="ticker-name">BTC</span>
+            <span class="ticker-price" data-price="btc">$&nbsp;94.230,12</span>
+            <span class="ticker-pct text-success" data-pct="btc">▲&nbsp;3,24%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">ETH</span>
+            <span class="ticker-price" data-price="eth">$&nbsp;2.712,45</span>
+            <span class="ticker-pct text-success" data-pct="eth">▲&nbsp;2,15%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">SOL</span>
+            <span class="ticker-price" data-price="sol">$&nbsp;184,22</span>
+            <span class="ticker-pct text-danger" data-pct="sol">▼&nbsp;-1,12%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">BNB</span>
+            <span class="ticker-price" data-price="bnb">$&nbsp;615,80</span>
+            <span class="ticker-pct text-success" data-pct="bnb">▲&nbsp;0,67%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">AAPL</span>
+            <span class="ticker-price">$&nbsp;224,22</span>
+            <span class="ticker-pct text-success">▲&nbsp;0,82%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">NVDA</span>
+            <span class="ticker-price">$&nbsp;132,45</span>
+            <span class="ticker-pct text-success">▲&nbsp;2,45%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">MSFT</span>
+            <span class="ticker-price">$&nbsp;412,55</span>
+            <span class="ticker-pct text-danger">▼&nbsp;-0,15%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">PETR4</span>
+            <span class="ticker-price">R$&nbsp;38,45</span>
+            <span class="ticker-pct text-success">▲&nbsp;1,24%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">MGLU3</span>
+            <span class="ticker-price">R$&nbsp;10,73</span>
+            <span class="ticker-pct text-success">▲&nbsp;4,38%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">WEGE3</span>
+            <span class="ticker-price">R$&nbsp;51,69</span>
+            <span class="ticker-pct text-danger">▼&nbsp;-3,18%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">VALE3</span>
+            <span class="ticker-price">R$&nbsp;62,30</span>
+            <span class="ticker-pct text-danger">▼&nbsp;-0,95%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">USDT</span>
+            <span class="ticker-price">$&nbsp;1,00</span>
+            <span class="ticker-pct text-muted">0,00%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <!-- ── Clone completo para loop contínuo (translateX -50%) ── -->
+          <div class="ticker-item">
+            <span class="ticker-name">BTC</span>
+            <span class="ticker-price" data-price="btc">$&nbsp;94.230,12</span>
+            <span class="ticker-pct text-success" data-pct="btc">▲&nbsp;3,24%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">ETH</span>
+            <span class="ticker-price" data-price="eth">$&nbsp;2.712,45</span>
+            <span class="ticker-pct text-success" data-pct="eth">▲&nbsp;2,15%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">SOL</span>
+            <span class="ticker-price" data-price="sol">$&nbsp;184,22</span>
+            <span class="ticker-pct text-danger" data-pct="sol">▼&nbsp;-1,12%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">BNB</span>
+            <span class="ticker-price" data-price="bnb">$&nbsp;615,80</span>
+            <span class="ticker-pct text-success" data-pct="bnb">▲&nbsp;0,67%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">AAPL</span>
+            <span class="ticker-price">$&nbsp;224,22</span>
+            <span class="ticker-pct text-success">▲&nbsp;0,82%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">NVDA</span>
+            <span class="ticker-price">$&nbsp;132,45</span>
+            <span class="ticker-pct text-success">▲&nbsp;2,45%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">MSFT</span>
+            <span class="ticker-price">$&nbsp;412,55</span>
+            <span class="ticker-pct text-danger">▼&nbsp;-0,15%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">PETR4</span>
+            <span class="ticker-price">R$&nbsp;38,45</span>
+            <span class="ticker-pct text-success">▲&nbsp;1,24%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">MGLU3</span>
+            <span class="ticker-price">R$&nbsp;10,73</span>
+            <span class="ticker-pct text-success">▲&nbsp;4,38%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">WEGE3</span>
+            <span class="ticker-price">R$&nbsp;51,69</span>
+            <span class="ticker-pct text-danger">▼&nbsp;-3,18%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">VALE3</span>
+            <span class="ticker-price">R$&nbsp;62,30</span>
+            <span class="ticker-pct text-danger">▼&nbsp;-0,95%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+          <div class="ticker-item">
+            <span class="ticker-name">USDT</span>
+            <span class="ticker-price">$&nbsp;1,00</span>
+            <span class="ticker-pct text-muted">0,00%</span>
+            <span class="ticker-sep">|</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Câmbio fixo (direita) — ícones mantidos pois o usuário aprovou este estilo -->
+      <div class="ticker-fixed-section">
+        <div class="currency-pill">
+          <span class="ticker-name"><i class="bi bi-currency-dollar"></i>&nbsp;USD</span>
+          <span class="ticker-price" data-price="usd">R$&nbsp;5,25</span>
+          <span class="ticker-pct text-success" data-pct="usd">▲&nbsp;0,20%</span>
+        </div>
+        <span class="ticker-sep">|</span>
+        <div class="currency-pill">
+          <span class="ticker-name"><i class="bi bi-currency-euro"></i>&nbsp;EUR</span>
+          <span class="ticker-price" data-price="eur">R$&nbsp;6,17</span>
+          <span class="ticker-pct text-danger" data-pct="eur">▼&nbsp;-0,44%</span>
+        </div>
+        <span class="ticker-sep">|</span>
+        <div class="currency-pill">
+          <span class="ticker-name"><i class="bi bi-currency-pound"></i>&nbsp;LIBRA</span>
+          <span class="ticker-price" data-price="gbp">R$&nbsp;7,93</span>
+          <span class="ticker-pct text-success" data-pct="gbp">▲&nbsp;0,10%</span>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          var fmtBRL = function (n) {
+            return 'R$\u00a0' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          };
+          var fmtUSD = function (n) {
+            return '$\u00a0' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          };
+
+          function setPrice(attr, text) {
+            document.querySelectorAll('[data-price="' + attr + '"]').forEach(function (el) {
+              el.textContent = text;
+            });
+          }
+
+          function setPct(attr, val) {
+            var abs = Math.abs(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            var up = val >= 0;
+            var text = (up ? '\u25b2\u00a0' : '\u25bc\u00a0') + (up ? '' : '-') + abs + '%';
+            document.querySelectorAll('[data-pct="' + attr + '"]').forEach(function (el) {
+              el.textContent = text;
+              el.className = 'ticker-pct ' + (up ? 'text-success' : 'text-danger');
+            });
+          }
+
+          function fetchCrypto() {
+            fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,binancecoin&vs_currencies=usd&include_24hr_change=true')
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                if (d.bitcoin)     { setPrice('btc', fmtUSD(d.bitcoin.usd));      setPct('btc', d.bitcoin.usd_24h_change); }
+                if (d.ethereum)    { setPrice('eth', fmtUSD(d.ethereum.usd));     setPct('eth', d.ethereum.usd_24h_change); }
+                if (d.solana)      { setPrice('sol', fmtUSD(d.solana.usd));       setPct('sol', d.solana.usd_24h_change); }
+                if (d.binancecoin) { setPrice('bnb', fmtUSD(d.binancecoin.usd));  setPct('bnb', d.binancecoin.usd_24h_change); }
+              })
+              .catch(function () {});
+          }
+
+          function fetchForex() {
+            fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,GBP-BRL')
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                if (d.USDBRL) { setPrice('usd', fmtBRL(parseFloat(d.USDBRL.bid))); setPct('usd', parseFloat(d.USDBRL.pctChange)); }
+                if (d.EURBRL) { setPrice('eur', fmtBRL(parseFloat(d.EURBRL.bid))); setPct('eur', parseFloat(d.EURBRL.pctChange)); }
+                if (d.GBPBRL) { setPrice('gbp', fmtBRL(parseFloat(d.GBPBRL.bid))); setPct('gbp', parseFloat(d.GBPBRL.pctChange)); }
+              })
+              .catch(function () {});
+          }
+
+          fetchCrypto();
+          fetchForex();
+          setInterval(fetchCrypto, 30000);
+          setInterval(fetchForex,  30000);
+        })();
+      </script>
+    </div>
+  </body>
+</html>

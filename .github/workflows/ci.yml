@@ -1,0 +1,193 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# CI — Integração Contínua · SAIKOO (PB_TP5)
+#
+# Justificativa: pipeline de CI garante que toda alteração no repositório seja
+# validada automaticamente antes de chegar à branch principal, detectando
+# regressões o mais cedo possível (shift-left testing).
+#
+# Estrutura de jobs:
+#   1. testes-unitarios-integracao  — build + testes + JaCoCo (≥ 90%) + SAST
+#   2. testes-e2e                   — Selenium headless (depende do job 1)
+#
+# Triggers:
+#   • push em qualquer branch   → executa CI completo
+#   • pull_request para main    → gate obrigatório antes do merge
+# ──────────────────────────────────────────────────────────────────────────────
+name: CI — Build, Test & Coverage
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+# Justificativa: cancela execuções anteriores do mesmo workflow na mesma branch
+# quando um novo push chega. Evita desperdício de minutos do runner em runs
+# obsoletos. `cancel-in-progress: false` em main protege um eventual CD que
+# esteja aguardando o resultado deste CI.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# Justificativa: princípio do menor privilégio — o CI não precisa escrever nada
+# no repositório. `contents: read` impede uso acidental do GITHUB_TOKEN para
+# operações de escrita. `security-events: write` é exigido pelo CodeQL para
+# publicar os resultados de análise na aba Security do repositório.
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 1 — Testes Unitários, de Integração, Cobertura JaCoCo e SAST
+  #
+  # Justificativa: agrupa build, testes e análise estática em um único job para
+  # garantir que o código compilado analisado pelo CodeQL é o mesmo que passou
+  # pelos testes — sem divergência entre builds separados.
+  # ────────────────────────────────────────────────────────────────────────────
+  testes-unitarios-integracao:
+    name: Testes Unitários, Integração & Cobertura (JaCoCo ≥ 90%)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15   # Justificativa: impede que um build travado consuma o
+                          # limite de 6h do runner. 15 min é 3× o tempo médio esperado.
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      # Justificativa: Temurin é a distribuição OpenJDK recomendada pela comunidade
+      # para CI por ser mantida pela Eclipse Foundation com suporte LTS garantido.
+      - name: Configurar Java 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'   # cache do ~/.m2 reduz tempo de download em ~60%
+
+      # Justificativa: `mvn clean verify` executa todas as fases até verify,
+      # incluindo o goal `jacoco:check` que falha o build se cobertura < 90%.
+      # O filtro exclui os testes Selenium (executados no job 2) e os pós-deploy
+      # (executados pelo workflow post-deploy.yml após o CD).
+      # `-B` (batch mode) desativa saída colorida e interativa — essencial em CI.
+      - name: Compilar e executar testes (excl. Selenium) + verificar cobertura
+        run: mvn -B clean verify -Dtest="!AtivoSeleniumTest,!AtivoSeleniumPosDeployTest" -DfailIfNoTests=false
+
+      # Justificativa: CodeQL analisa o bytecode Java gerado pelo build anterior
+      # em busca de vulnerabilidades (CWE). Executar após o build evita compilação
+      # duplicada e garante que o código analisado é o mesmo que passou nos testes.
+      # Os resultados ficam disponíveis em Security > Code scanning alerts.
+      - name: Inicializar CodeQL (SAST)
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+
+      - name: Build para análise CodeQL
+        run: mvn -B compile -DskipTests
+
+      - name: Executar análise CodeQL
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:java"
+
+      # Justificativa: publicar relatórios como artefatos permite auditoria pós-build
+      # sem necessidade de reexecutar o pipeline. Retenção de 14 dias é suficiente
+      # para revisão de PRs sem sobrecarregar o storage.
+      - name: Publicar relatórios Surefire (XML)
+        uses: actions/upload-artifact@v4
+        if: always()   # publica mesmo se testes falharem para diagnóstico
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 14
+
+      - name: Publicar relatório de cobertura JaCoCo (HTML)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-coverage-report
+          path: target/site/jacoco/
+          retention-days: 14
+
+      # Justificativa: o resumo Markdown em $GITHUB_STEP_SUMMARY exibe os
+      # resultados de cobertura e contagem de testes diretamente na interface do
+      # GitHub Actions, sem necessidade de baixar artefatos ou navegar nos logs.
+      - name: Publicar resumo de cobertura no GitHub Actions
+        if: always()
+        run: |
+          echo "## Resultado dos Testes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Métrica | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "| ------- | ----- |" >> $GITHUB_STEP_SUMMARY
+          TOTAL=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h 'tests=' {} \; | \
+            grep -oP 'tests="\K[0-9]+' | awk '{s+=$1} END {print s}')
+          FAILURES=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h 'failures=' {} \; | \
+            grep -oP 'failures="\K[0-9]+' | awk '{s+=$1} END {print s}')
+          ERRORS=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h 'errors=' {} \; | \
+            grep -oP 'errors="\K[0-9]+' | awk '{s+=$1} END {print s}')
+          COVERAGE=$(grep -oP 'COVEREDRATIO.*?[0-9]+\.[0-9]+' target/site/jacoco/jacoco.csv 2>/dev/null | \
+            tail -1 || echo "N/A")
+          echo "| Testes executados | ${TOTAL:-N/A} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Falhas | ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Erros | ${ERRORS:-0} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gate JaCoCo | ≥ 90% |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Artefatos: [surefire-reports] · [jacoco-coverage-report]" >> $GITHUB_STEP_SUMMARY
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 2 — Testes E2E com Selenium (Chrome Headless)
+  #
+  # Justificativa: testes E2E validam fluxos reais do usuário no browser e são
+  # executados após os testes de unidade/integração para economizar recursos de
+  # runner — se a lógica central quebrar, o job 1 já sinaliza o problema.
+  #
+  # O runner ubuntu-latest tem Google Chrome pré-instalado.
+  # O WebDriverManager (v5.8.0) detecta e baixa o ChromeDriver compatível.
+  # O AtivoSeleniumTest já configura `--headless` internamente, portanto
+  # nenhuma configuração extra de display é necessária.
+  # ────────────────────────────────────────────────────────────────────────────
+  testes-e2e:
+    name: Testes E2E — Selenium Chrome Headless
+    runs-on: ubuntu-latest
+    needs: testes-unitarios-integracao   # executa somente se job 1 passar
+    timeout-minutes: 10   # Justificativa: Selenium com 6 testes não deve ultrapassar
+                          # 5 min. 10 min é margem segura contra lentidão pontual do runner.
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Justificativa: `mvn test` (sem `verify`) executa somente a fase de testes,
+      # suficiente para Selenium. O JaCoCo já foi verificado no job anterior.
+      - name: Executar testes E2E Selenium
+        run: mvn -B test -Dtest=AtivoSeleniumTest -DfailIfNoTests=false
+
+      # Justificativa: screenshots são artefatos valiosos para diagnóstico de falhas
+      # E2E — mostram o estado exato da UI no momento da falha. `if: always()`
+      # garante upload mesmo quando um teste falha (cenário mais importante).
+      - name: Publicar screenshots Selenium
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: selenium-screenshots
+          path: src/test/resources/screenshots/
+          retention-days: 14
+
+      - name: Publicar resumo E2E no GitHub Actions
+        if: always()
+        run: |
+          echo "## Testes E2E — Selenium" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          TOTAL=$(find target/surefire-reports -name "TEST-*SeleniumTest.xml" -exec grep -h 'tests=' {} \; | \
+            grep -oP 'tests="\K[0-9]+' | awk '{s+=$1} END {print s}')
+          FAILURES=$(find target/surefire-reports -name "TEST-*SeleniumTest.xml" -exec grep -h 'failures=' {} \; | \
+            grep -oP 'failures="\K[0-9]+' | awk '{s+=$1} END {print s}')
+          echo "| Testes E2E | ${TOTAL:-N/A} | Falhas: ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Screenshots disponíveis em: [selenium-screenshots]" >> $GITHUB_STEP_SUMMARY

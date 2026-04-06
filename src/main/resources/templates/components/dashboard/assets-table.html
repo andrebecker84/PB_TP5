@@ -1,0 +1,164 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!--
+  Componente: dashboard/assets-table
+  Tabela com os ativos mais recentes do portfólio (top 5 por posição).
+  Depende de: ${ativos} — lista de AtivoFinanceiro
+-->
+    <div th:fragment="assets-table" class="row g-4 mb-5">
+      <div class="col-12">
+        <div class="card p-4 border-0 shadow-sm">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <p class="dash-title mb-0">Ativos no Portfólio</p>
+            <a href="/ativos" class="btn btn-outline-primary btn-sm px-3"
+              >Ver Todos</a
+            >
+          </div>
+
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Ticker</th>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Categoria</th>
+                  <th class="text-end">Preço Médio</th>
+                  <th class="text-end">Quantidade</th>
+                  <th class="text-end">Total Investido</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Ativos reais (máximo 5) -->
+                <tr th:each="ativo : ${ativos}">
+                  <td>
+                    <span
+                      class="fw-bold text-primary px-2 py-1 bg-primary bg-opacity-10 rounded"
+                      th:text="${ativo.ticker}"
+                      style="font-family: 'Courier New', monospace"
+                      >BTC</span
+                    >
+                  </td>
+                  <td th:text="${ativo.nome}" class="fw-medium">Bitcoin</td>
+                  <td>
+                    <span
+                      th:class="${'badge badge-tipo bg-dark border text-light badge-tipo-' + ativo.tipo.toString().toLowerCase()}"
+                      th:text="${ativo.tipo}"
+                      >CRIPTOMOEDA</span
+                    >
+                    <span
+                      th:if="${ativo.categoria.toString() == 'RENDA_FIXA' || ativo.tipo.toString() == 'RENDA_FIXA'}"
+                      class="badge badge-tipo bg-dark border text-light badge-ref-selic ms-1"
+                      title="Ativo atrelado a juros/taxa de referência"
+                      >REF: SELIC</span
+                    >
+                  </td>
+                  <td th:text="${ativo.categoria}" class="small">
+                    RENDA_VARIAVEL
+                  </td>
+                  <td class="text-end fw-semibold text-main">
+                    <span class="currency-symbol">R$</span
+                    ><span
+                      th:text="${#numbers.formatDecimal(ativo.precoMedio, 1, 'POINT', 2, 'COMMA')}"
+                      >0,00</span
+                    >
+                  </td>
+                  <td
+                    class="text-end text-muted"
+                    th:text="${ativo.quantidade}"
+                  >
+                    0.0
+                  </td>
+                  <td class="text-end fw-bold text-primary">
+                    <span class="currency-symbol">R$</span
+                    ><span
+                      th:text="${#numbers.formatDecimal(ativo.valorInvestido, 1, 'POINT', 2, 'COMMA')}"
+                      >0,00</span
+                    >
+                  </td>
+                </tr>
+
+                <!-- Estado vazio: linhas de exemplo -->
+                <tr th:if="${ativos.isEmpty()}">
+                  <td>
+                    <span
+                      class="fw-bold text-primary px-2 py-1 bg-primary bg-opacity-10 rounded"
+                      style="font-family: 'Courier New', monospace"
+                      >BTC</span
+                    >
+                  </td>
+                  <td class="fw-medium">
+                    Bitcoin
+                    <span
+                      class="badge bg-secondary opacity-50 ms-2 small"
+                      style="font-size: 0.65rem"
+                      >EXEMPLO</span
+                    >
+                  </td>
+                  <td>
+                    <span
+                      class="badge badge-tipo bg-dark border text-light badge-tipo-criptomoeda"
+                      >CRIPTOMOEDA</span
+                    >
+                  </td>
+                  <td class="small">CRIPTODIVISA</td>
+                  <td class="text-end fw-semibold text-main">
+                    <span class="currency-symbol">R$</span>452.300,00
+                  </td>
+                  <td class="text-end text-muted">1,0</td>
+                  <td class="text-end fw-bold text-primary">
+                    <span class="currency-symbol">R$</span>45.320,00
+                  </td>
+                </tr>
+                <tr th:if="${ativos.isEmpty()}">
+                  <td>
+                    <span
+                      class="fw-bold text-primary px-2 py-1 bg-primary bg-opacity-10 rounded"
+                      style="font-family: 'Courier New', monospace"
+                      >ETH</span
+                    >
+                  </td>
+                  <td class="fw-medium">
+                    Ethereum
+                    <span
+                      class="badge bg-secondary opacity-50 ms-2 small"
+                      style="font-size: 0.65rem"
+                      >EXEMPLO</span
+                    >
+                  </td>
+                  <td>
+                    <span
+                      class="badge badge-tipo bg-dark border text-light badge-tipo-criptomoeda"
+                      >CRIPTOMOEDA</span
+                    >
+                  </td>
+                  <td class="small">CRIPTODIVISA</td>
+                  <td class="text-end fw-semibold text-main">
+                    <span class="currency-symbol">R$</span>15.180,00
+                  </td>
+                  <td class="text-end text-muted">0,8</td>
+                  <td class="text-end fw-bold text-primary">
+                    <span class="currency-symbol">R$</span>12.150,00
+                  </td>
+                </tr>
+
+                <!-- CTA vazio -->
+                <tr th:if="${ativos.isEmpty()}">
+                  <td colspan="7" class="text-center py-4">
+                    <p class="text-muted small mb-3">
+                      Seu portfólio real está vazio.
+                    </p>
+                    <a href="/ativos/novo" class="btn btn-primary btn-sm px-4">
+                      <i class="bi bi-plus-lg me-2"></i>Adicionar Primeiro Ativo
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

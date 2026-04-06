@@ -1,0 +1,26 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layout :: layout(~{::title}, ~{::content}, ~{})}"
+>
+  <head>
+    <title th:fragment="title">Erro | SAIKOO</title>
+  </head>
+  <body>
+    <div th:fragment="content">
+      <div class="d-flex align-items-center justify-content-center min-vh-100">
+        <div class="text-center">
+          <h1 class="display-1 fw-bold text-danger">Erro</h1>
+          <p class="fs-3 text-white">
+            <span class="text-danger">Opps!</span> Algo deu errado.
+          </p>
+          <p
+            class="lead text-white-50"
+            th:text="${errorMessage} ?: 'Erro inesperado no servidor.'"
+          ></p>
+          <a href="/ativos" class="btn btn-primary">Ir para a Home</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

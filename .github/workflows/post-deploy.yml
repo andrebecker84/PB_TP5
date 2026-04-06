@@ -1,0 +1,106 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Pós-Deploy — Testes de Fumaça Selenium · SAIKOO (PB_TP5)
+#
+# Justificativa: testes pós-deploy validam a integridade do sistema após cada
+# deploy em staging, confirmando que as rotas críticas respondem corretamente
+# antes de qualquer promoção para produção. São executados automaticamente após
+# o CD, sem intervenção manual.
+#
+# Estes testes complementam (não substituem) os testes E2E do CI: enquanto o
+# CI valida fluxos funcionais em ambiente isolado, o pós-deploy confirma que
+# o artefato deployado está operacional no ambiente de destino.
+#
+# Estrutura de jobs:
+#   1. testes-pos-deploy — Selenium headless contra instância local do JAR
+#
+# Trigger:
+#   • workflow_run: após CD concluir com sucesso (deploy em staging)
+# ──────────────────────────────────────────────────────────────────────────────
+name: Pós-Deploy — Testes de Fumaça Selenium
+
+on:
+  # Justificativa: `workflow_run` garante que os testes pós-deploy só executam
+  # após o CD concluir com sucesso. Se o deploy falhou, não faz sentido rodar
+  # testes de fumaça contra um ambiente possivelmente inconsistente.
+  workflow_run:
+    workflows: ["CD — Build & Deploy"]
+    types: [completed]
+
+# Justificativa: princípio do menor privilégio — testes pós-deploy só precisam
+# ler o código e fazer upload de artefatos. Nenhuma escrita no repositório.
+permissions:
+  contents: read
+
+# Justificativa: cancela execuções obsoletas na mesma referência, mas nunca
+# interrompe um conjunto de testes em andamento para não perder resultados.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 1 — Testes de Fumaça com Selenium
+  #
+  # Justificativa: executa AtivoSeleniumPosDeployTest, que sobe uma instância
+  # Spring Boot com porta aleatória e valida as rotas críticas da aplicação.
+  # Em ambientes com URL de staging real, o parâmetro `-Dapp.base-url` pode ser
+  # substituído pela URL do ambiente (ex: https://staging.saikoo.app).
+  # ────────────────────────────────────────────────────────────────────────────
+  testes-pos-deploy:
+    name: Testes de Fumaça Pós-Deploy — Selenium
+    runs-on: ubuntu-latest
+    # Justificativa: só executa se o CD concluiu com sucesso. Um CD com falha
+    # indica ambiente possivelmente indisponível — testes seriam falso-negativos.
+    if: github.event.workflow_run.conclusion == 'success'
+    timeout-minutes: 10   # Justificativa: 4 testes Selenium headless não devem
+                           # ultrapassar 5 min. 10 min é margem para lentidão pontual.
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      # Justificativa: mesma versão Java do CI e CD garante paridade entre os
+      # ambientes de validação e produção. Cache Maven reutiliza dependências
+      # baixadas em execuções anteriores do mesmo runner.
+      - name: Configurar Java 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Justificativa: `mvn test` executa apenas a classe de pós-deploy, que
+      # sobe a aplicação com porta aleatória via @SpringBootTest(RANDOM_PORT).
+      # Isso simula o comportamento do sistema no ambiente deployado sem depender
+      # de um endpoint externo, tornando o workflow autocontido.
+      - name: Executar testes de fumaça pós-deploy
+        run: mvn -B test -Dtest=AtivoSeleniumPosDeployTest -DfailIfNoTests=false
+
+      # Justificativa: screenshots pós-deploy são artefatos críticos para
+      # diagnóstico — mostram o estado real da UI após o deploy, incluindo
+      # eventuais regressões visuais. `if: always()` garante upload mesmo em
+      # falhas, que são o cenário mais importante para investigação.
+      - name: Publicar screenshots pós-deploy
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-pos-deploy
+          path: src/test/resources/screenshots/pos-deploy/
+          retention-days: 14
+
+      - name: Publicar resumo pós-deploy no GitHub Actions
+        if: always()
+        run: |
+          echo "## Testes de Fumaça Pós-Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          TOTAL=$(find target/surefire-reports -name "TEST-*PosDeployTest.xml" -exec grep -h 'tests=' {} \; | \
+            grep -oP 'tests="\K[0-9]+' | awk '{s+=$1} END {print s}')
+          FAILURES=$(find target/surefire-reports -name "TEST-*PosDeployTest.xml" -exec grep -h 'failures=' {} \; | \
+            grep -oP 'failures="\K[0-9]+' | awk '{s+=$1} END {print s}')
+          echo "| Métrica | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "| ------- | ----- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Testes de fumaça | ${TOTAL:-N/A} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Falhas | ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CD trigger | ${{ github.event.workflow_run.head_sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Screenshots disponíveis em: [screenshots-pos-deploy]" >> $GITHUB_STEP_SUMMARY

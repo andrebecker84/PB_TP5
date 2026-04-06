@@ -1,0 +1,61 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!--
+  Componente: toasts
+  Notificações de feedback via Flash Attributes do Spring MVC.
+  Renderizado condicionalmente — aparece somente quando a mensagem existe no model.
+-->
+    <div
+      th:fragment="toasts"
+      class="toast-container position-fixed top-0 end-0 p-3"
+      style="z-index: 2050; pointer-events: none"
+    >
+      <div
+        id="successToast"
+        class="toast show align-items-center border-0 border-start border-4 border-success"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        th:if="${successMessage}"
+      >
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="bi bi-check-circle-fill text-success me-2"></i>
+            <span th:text="${successMessage}"
+              >Operação realizada com sucesso!</span
+            >
+          </div>
+          <button
+            type="button"
+            class="btn-close btn-close-white me-2 m-auto"
+            data-bs-dismiss="toast"
+            aria-label="Fechar"
+          ></button>
+        </div>
+      </div>
+
+      <div
+        id="errorToast"
+        class="toast show align-items-center border-0 border-start border-4 border-danger"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        th:if="${errorMessage}"
+      >
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+            <span th:text="${errorMessage}">Erro ao processar a operação.</span>
+          </div>
+          <button
+            type="button"
+            class="btn-close btn-close-white me-2 m-auto"
+            data-bs-dismiss="toast"
+            aria-label="Fechar"
+          ></button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

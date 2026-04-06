@@ -1,0 +1,323 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# CD — Entrega Contínua · SAIKOO (PB_TP5)
+#
+# Justificativa: pipeline de CD empacota e promove o artefato pelos ambientes
+# de forma automatizada, com gate de aprovação manual obrigatório para produção.
+# Isso elimina builds manuais e garante rastreabilidade entre commit e deploy.
+#
+# Estrutura de jobs:
+#   1. build-artefato  — empacota o fat-JAR
+#   2. deploy-dev      — deploy automático no ambiente dev (após CI em main)
+#   3. deploy-staging  — deploy automático em staging (somente em tags rc)
+#   4. deploy-prod     — deploy com aprovação manual (somente em tags estáveis)
+#   5. release         — cria GitHub Release com JAR (somente em tags estáveis)
+#
+# Triggers:
+#   • workflow_run (CI concluído com sucesso em main) → build + deploy-dev
+#   • push de tag v*.*.*-rc*  (ex: v2.0.0-rc1)       → build + staging
+#   • push de tag v*.*.*      (ex: v2.0.0)            → build + prod + release
+#
+# Ambientes configurados no GitHub (Settings > Environments):
+#   dev        — sem proteção (deploy automático para integração rápida)
+#   staging    — sem proteção manual; dispara post-deploy.yml automaticamente
+#   production — reviewer obrigatório antes do deploy
+#
+# Relação com CI: o CD depende explicitamente do CI via `workflow_run`.
+# Justificativa: impede que código que falhou nos testes seja empacotado e
+# entregue. Sem essa dependência, CI e CD disparariam em paralelo no mesmo push.
+# ──────────────────────────────────────────────────────────────────────────────
+name: CD — Build & Deploy
+
+on:
+  # Justificativa: `workflow_run` garante que o CD só inicia após o CI terminar
+  # com sucesso na branch main. A condição `conclusion == 'success'` no job
+  # reforça que um CI com falha não desencadeia a entrega.
+  workflow_run:
+    workflows: ["CI — Build, Test & Coverage"]
+    types: [completed]
+    branches: [main]
+
+  # Justificativa: tags semânticas são criadas manualmente após merge em main.
+  # RC tags disparam build + staging; tags estáveis disparam build + prod + release.
+  push:
+    tags:
+      - 'v*.*.*-rc*'   # ex: v2.0.0-rc1 → staging
+      - 'v*.*.*'       # ex: v2.0.0     → produção + release
+
+# Justificativa: nunca cancela um CD em andamento — uma entrega não deve ser
+# interrompida no meio do processo para evitar ambientes em estado inconsistente.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 1 — Empacotamento do JAR Executável
+  #
+  # Justificativa: `mvn clean package -DskipTests` produz o fat-JAR (Spring Boot
+  # Uber JAR) sem reexecutar testes — eles já foram validados pelo CI antes do
+  # merge. Re-rodar testes no CD seria desperdício de tempo e recursos.
+  # ────────────────────────────────────────────────────────────────────────────
+  build-artefato:
+    name: Empacotar JAR Executável
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Justificativa: quando disparado via workflow_run, verifica explicitamente
+    # que o CI concluiu com sucesso. Para push de tag, a condição é sempre true.
+    if: >
+      github.event_name == 'push' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Justificativa: `-DskipTests` omite execução de testes (já validados pelo
+      # CI). O goal `package` gera o fat-JAR em target/saikoo-<version>.jar.
+      - name: Build do artefato (testes já validados pelo CI)
+        run: mvn -B clean package -DskipTests
+
+      # Justificativa: publicar o JAR como artefato permite que jobs seguintes
+      # o consumam sem rebuild e que a equipe faça download direto pelo GitHub UI.
+      # Retenção de 30 dias cobre um sprint completo para eventual rollback.
+      - name: Publicar JAR como artefato do workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: saikoo-jar
+          path: target/saikoo-*.jar
+          retention-days: 30
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 2 — Deploy no Ambiente Dev
+  #
+  # Justificativa: o ambiente dev recebe cada merge em main automaticamente,
+  # garantindo que a versão mais recente validada pelo CI esteja sempre disponível
+  # para testes exploratórios e demonstrações internas.
+  #
+  # Configuração do ambiente no GitHub:
+  #   Settings > Environments > dev → sem reviewers, sem wait timer
+  #
+  # Para configurar o deploy real, substitua o step "Executar deploy" pelas
+  # chamadas específicas do seu provedor de nuvem (Railway, Fly.io, etc.).
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy-dev:
+    name: Deploy — dev
+    runs-on: ubuntu-latest
+    needs: build-artefato
+    environment: dev   # referencia o GitHub Environment "dev" (sem proteção)
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+      id-token: write   # Justificativa: necessário para autenticação OIDC com
+                        # provedores de nuvem sem uso de segredos de longa duração
+
+    steps:
+      - name: Download do JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: saikoo-jar
+
+      # ── Autenticação OIDC ──────────────────────────────────────────────────
+      # Justificativa: OIDC elimina segredos estáticos (service account keys) que
+      # poderiam vazar. O GitHub gera tokens temporários que expiram após o job,
+      # seguindo o princípio do menor privilégio para infraestrutura.
+      #
+      # Substitua o bloco abaixo pela action do seu provedor:
+      #   GCP:   google-github-actions/auth@v2
+      #   AWS:   aws-actions/configure-aws-credentials@v4
+      #   Azure: azure/login@v2
+      #
+      # Exemplo GCP:
+      # - name: Autenticar no GCP via OIDC
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+      #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Executar deploy em dev (Render webhook)
+        env:
+          # Justificativa: variáveis sensíveis são injetadas via secrets do GitHub
+          # (Settings > Secrets) e nunca expostas nos logs. O workflow referencia
+          # apenas o nome do secret — o valor real só existe em memória durante o job.
+          # DEV_DEPLOY_URL: URL do deploy hook do Render para o serviço de dev.
+          # Obtenha em: Render Dashboard > seu serviço > Settings > Deploy Hook
+          DEPLOY_URL: ${{ secrets.DEV_DEPLOY_URL }}
+        run: |
+          echo "::notice::Disparando deploy em dev via Render webhook..."
+          curl --fail --silent --show-error \
+            --retry 3 --retry-delay 5 \
+            -X POST "$DEPLOY_URL"
+          echo "::notice::Webhook Render disparado. Acompanhe o deploy em render.com/dashboard"
+
+      - name: Registrar deploy no resumo
+        run: |
+          echo "## Deploy — dev" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Campo | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "| ----- | ----- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ambiente | dev |" >> $GITHUB_STEP_SUMMARY
+          echo "| Artefato | $(ls saikoo-*.jar) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Executado por | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 3 — Deploy no Ambiente Staging
+  #
+  # Justificativa: staging recebe apenas tags RC (release candidate), garantindo
+  # que somente versões explicitamente marcadas para validação chegam a este
+  # ambiente. Após o deploy, o workflow post-deploy.yml é disparado automaticamente
+  # para executar os testes de fumaça Selenium.
+  #
+  # Configuração do ambiente no GitHub:
+  #   Settings > Environments > staging → sem reviewers, sem wait timer
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy — staging
+    runs-on: ubuntu-latest
+    needs: build-artefato
+    # Justificativa: staging só executa em tags RC para evitar que merges comuns
+    # de main sobrescrevam um ambiente de validação em uso pelo time de QA.
+    if: startsWith(github.ref, 'refs/tags/') && contains(github.ref, '-rc')
+    environment: staging
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Download do JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: saikoo-jar
+
+      - name: Executar deploy em staging (Render webhook)
+        env:
+          DEPLOY_URL: ${{ secrets.STAGING_DEPLOY_URL }}
+        run: |
+          echo "::notice::Disparando deploy em staging via Render webhook..."
+          curl --fail --silent --show-error \
+            --retry 3 --retry-delay 5 \
+            -X POST "$DEPLOY_URL"
+          echo "::notice::Webhook Render disparado. post-deploy.yml iniciará automaticamente."
+
+      - name: Registrar deploy no resumo
+        run: |
+          echo "## Deploy — staging" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Campo | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "| ----- | ----- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ambiente | staging |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Artefato | $(ls saikoo-*.jar) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Próximo passo | post-deploy.yml (Selenium em staging) |" >> $GITHUB_STEP_SUMMARY
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 4 — Deploy no Ambiente de Produção
+  #
+  # Justificativa: produção exige aprovação manual obrigatória de um reviewer
+  # antes do deploy. Isso garante que nenhum artefato chega a produção sem
+  # validação humana explícita — independentemente de quantos testes automatizados
+  # passaram. O reviewer confirma que o timing e o contexto do deploy são adequados.
+  #
+  # Configuração do ambiente no GitHub:
+  #   Settings > Environments > production
+  #     → Required reviewers: [nome do reviewer]
+  #     → Wait timer: opcional (ex: 10 min para cancelar se necessário)
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy-prod:
+    name: Deploy — production (aprovação manual obrigatória)
+    runs-on: ubuntu-latest
+    needs: build-artefato
+    # Justificativa: produção recebe apenas tags semânticas estáveis (sem -rc),
+    # garantindo que nenhum release candidate vai direto para o ambiente final.
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-rc')
+    environment: production   # GitHub bloqueia este job até aprovação do reviewer
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Download do JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: saikoo-jar
+
+      - name: Executar deploy em produção (Render webhook)
+        env:
+          DEPLOY_URL: ${{ secrets.PROD_DEPLOY_URL }}
+        run: |
+          echo "::notice::Deploy aprovado pelo reviewer. Disparando deploy em produção..."
+          curl --fail --silent --show-error \
+            --retry 3 --retry-delay 5 \
+            -X POST "$DEPLOY_URL"
+          echo "::notice::Webhook Render disparado. Deploy em produção em andamento."
+
+      - name: Registrar deploy no resumo
+        run: |
+          echo "## Deploy — production" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Campo | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "| ----- | ----- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ambiente | production |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Aprovado por | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 5 — Criar GitHub Release Versionada
+  #
+  # Justificativa: releases versionadas via tags semânticas fornecem
+  # rastreabilidade entre código-fonte e artefato deployado. O changelog
+  # automático é gerado a partir dos commits desde a tag anterior.
+  #
+  # Só executa em tags estáveis (sem -rc) após o deploy em produção ser aprovado.
+  # ────────────────────────────────────────────────────────────────────────────
+  release:
+    name: Criar Release GitHub (somente em tags estáveis)
+    runs-on: ubuntu-latest
+    needs: deploy-prod
+    timeout-minutes: 5
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-rc')
+
+    permissions:
+      contents: write   # necessário para criar releases e fazer upload de assets
+
+    steps:
+      - name: Baixar JAR do artefato
+        uses: actions/download-artifact@v4
+        with:
+          name: saikoo-jar
+
+      # Justificativa: `softprops/action-gh-release` cria a release com changelog
+      # automático baseado nos commits agrupados por Pull Request.
+      - name: Criar Release no GitHub com JAR anexado
+        uses: softprops/action-gh-release@v2
+        with:
+          files: saikoo-*.jar
+          generate_release_notes: true
+          body: |
+            ## SAIKOO — ${{ github.ref_name }}
+
+            Sistema CRUD de Gestão Financeira Pessoal com pipeline CI/CD completa.
+            Deploy realizado nos ambientes dev, staging e production.
+
+            ### Como executar
+            ```bash
+            java -jar saikoo-${{ github.ref_name }}.jar
+            # Acesse: http://localhost:8080/ativos/dashboard
+            ```

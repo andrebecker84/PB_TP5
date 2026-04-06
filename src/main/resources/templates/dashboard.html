@@ -1,0 +1,60 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layout :: layout(~{::title}, ~{::content}, ~{::scripts})}"
+>
+  <head>
+    <title th:fragment="title">Dashboard Financeiro | SAIKOO</title>
+  </head>
+  <body>
+    <div th:fragment="content">
+      <!-- Cabeçalho da página -->
+      <header class="mb-5 d-flex justify-content-between align-items-end">
+        <div>
+          <h6 class="text-uppercase text-primary fw-bold mb-1">Dashboard</h6>
+          <h1 class="fw-extrabold mb-0">Performance Financeira</h1>
+        </div>
+        <div class="text-end">
+          <span
+            class="d-block small mb-1"
+            style="color: var(--text-muted); font-weight: 600"
+            >DATA DE HOJE</span
+          >
+          <span
+            class="fw-bold fs-6"
+            th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy')}"
+          ></span>
+        </div>
+      </header>
+
+      <!-- ── Componente: Cards de Sumário ── -->
+      <div
+        th:replace="~{components/dashboard/stat-widgets :: stat-widgets}"
+      ></div>
+
+      <!-- ── Componente: Evolução do Patrimônio + Alocação ── -->
+      <div
+        th:replace="~{components/dashboard/chart-evolution :: chart-evolution}"
+      ></div>
+
+      <!-- ── Componente: Comparativo Cripto | Ações | Valor Investido ── -->
+      <div
+        th:replace="~{components/dashboard/chart-comparison :: chart-comparison}"
+      ></div>
+
+      <!-- ── Componente: Tabela de Ativos ── -->
+      <div
+        th:replace="~{components/dashboard/assets-table :: assets-table}"
+      ></div>
+    </div>
+
+    <!-- Scripts específicos do Dashboard -->
+    <th:block th:fragment="scripts">
+      <script th:inline="javascript">
+        window.__SAIKOO_ATIVOS__ = /*[[${ativos}]]*/ [];
+        window.__SAIKOO_ALOCACAO__ = /*[[${alocacaoPorTipo}]]*/ {};
+      </script>
+      <script th:src="@{/js/dashboard-charts.js}"></script>
+    </th:block>
+  </body>
+</html>

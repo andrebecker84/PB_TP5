@@ -1,0 +1,669 @@
+/* ============================================================
+   SAIKOO — Design System
+   Paleta dark premium com glassmorphism e tipografia Inter
+   ============================================================ */
+
+:root {
+  --bg-body: #000000;
+  --bg-sidebar: rgba(28, 28, 36, 0.7);
+  --bg-card: rgba(30, 30, 40, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.05);
+  --primary: #6c5dd3;
+  --primary-hover: #5a4cb5;
+  --secondary: #ff754c;
+  --text-main: #ffffff;
+  --text-muted: #ced4da;
+  --success: #45b36b;
+  --danger: #ef466f;
+}
+
+/* ── Base ── */
+body {
+  background: radial-gradient(circle at 50% 0%, #1f1f26 0%, #000000 85%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  font-family: "Inter", sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+/* ── Layout ── */
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 200px;
+  background: var(--bg-sidebar);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--glass-border);
+  padding: 1.6rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  height: 100vh;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 200px;
+  padding: 0;
+  width: calc(100% - 200px);
+}
+
+/* ── Logo ── */
+.logo-area {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.6rem;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #ffcf54 0%, #ff7b00 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow:
+    0 0 18px rgba(255, 123, 0, 0.65),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  font-size: 1.15rem;
+}
+
+.logo-name {
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.4);
+}
+
+.logo-coins {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
+  gap: 2px;
+}
+
+.logo-coin {
+  font-size: 0.85em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-coin--back {
+  color: var(--warning);
+}
+.logo-coin--front {
+  color: #ffd700;
+  margin-left: -5px; /* Leve sobreposição para charme visual */
+  text-shadow: -2px 0 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Navigation ── */
+.nav-menu {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.65rem 0.8rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--text-main);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.sidebar-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  margin-bottom: 0.65rem;
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.sidebar-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), transparent);
+  opacity: 0.5;
+}
+.nav-link.active-custom {
+  background-color: var(--primary);
+  color: white !important;
+}
+
+/* ── Upgrade Card ── */
+.upgrade-card {
+  background: linear-gradient(135deg, #2d2d35, #1c1c24);
+  border-radius: 13px;
+  padding: 1rem;
+  margin-top: auto;
+  border: 1px solid var(--glass-border);
+  text-align: center;
+}
+
+/* ── Top Header ── */
+.top-header {
+  height: 64px;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(13, 13, 18, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 900;
+}
+
+.top-header i {
+  color: white !important;
+}
+
+.search-bar {
+  background-color: var(--bg-card);
+  border-radius: 10px;
+  padding: 0.48rem 0.8rem;
+  display: flex;
+  align-items: center;
+  width: 240px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+/* ── Page Content ── */
+.page-content {
+  padding: 2rem;
+}
+
+.page-content h1 {
+  font-size: 1.75rem;
+}
+
+header .btn {
+  font-size: 0.875rem;
+}
+
+/* ── Market Ticker ── */
+.ticker-container {
+  width: 100%;
+  background: rgba(13, 13, 18, 0.7);
+  white-space: nowrap;
+  position: sticky;
+  top: 64px;
+  z-index: 850;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  height: 34px;
+}
+
+.ticker-scroll-area {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.ticker-fixed-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+  background: linear-gradient(
+    90deg,
+    rgba(20, 20, 28, 0.8),
+    rgba(28, 28, 36, 0.98)
+  );
+  border-left: 1px solid var(--glass-border);
+  height: 32px;
+  z-index: 100;
+  box-shadow: -10px 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.ticker-wrapper {
+  display: inline-flex;
+  align-items: center;
+  animation: ticker-scrolling 70s linear infinite;
+}
+
+.ticker-scroll-area:hover .ticker-wrapper,
+.ticker-container:hover .ticker-wrapper {
+  animation-play-state: paused;
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  letter-spacing: 0.2px;
+  padding-left: 2px;
+}
+
+.ticker-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  color: white;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ticker-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ticker-name {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
+.ticker-price {
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 400;
+}
+
+.ticker-pct {
+  font-size: 0.65rem;
+  font-weight: 400;
+}
+
+.ticker-sep {
+  color: var(--glass-border);
+  font-weight: 300;
+  padding: 0 0.65rem;
+  user-select: none;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.currency-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+}
+
+.cifra-main {
+  color: inherit;
+  font-weight: 400;
+  font-size: 0.68rem;
+  margin-right: 0;
+}
+
+.currency-symbol {
+  color: inherit;
+  font-weight: inherit;
+  margin-right: 8px;
+  opacity: 0.9;
+}
+
+@keyframes ticker-scrolling {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+}
+
+.stat-card {
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  padding: 1.2rem;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.4rem;
+  z-index: 2;
+}
+
+.stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: white;
+  z-index: 2;
+}
+
+.stat-icon-watermark {
+  position: absolute;
+  right: -16px;
+  bottom: -16px;
+  font-size: 6.4rem;
+  opacity: 0.1;
+  transform: rotate(-15deg);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── Form Controls ── */
+.btn-primary {
+  background: linear-gradient(135deg, #6c5dd3 0%, #5a4cb5 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(108, 93, 211, 0.4);
+}
+
+.form-control,
+.form-select {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  backdrop-filter: blur(10px);
+}
+
+.form-control:focus {
+  background-color: var(--bg-card);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(108, 93, 211, 0.2);
+}
+
+/* ── Tables ── */
+.table {
+  color: var(--text-main);
+  border-color: var(--glass-border);
+}
+.table > :not(caption) > * > * {
+  background-color: transparent;
+  border-bottom-color: var(--glass-border);
+  color: #9da5b4;
+  font-size: 0.84rem;
+}
+.table tbody tr:hover td {
+  color: var(--text-main);
+  background-color: rgba(255, 255, 255, 0.02);
+  box-shadow: 0 0 10px rgba(108, 93, 211, 0.1);
+}
+.table thead th {
+  color: var(--text-main);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--glass-border);
+}
+
+.text-main {
+  color: var(--text-main) !important;
+}
+
+/* ── Toasts ── */
+.toast {
+  background-color: rgba(23, 23, 29, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: white;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  pointer-events: auto;
+  min-width: 240px;
+  margin-top: 0.8rem;
+}
+
+.toast-body {
+  padding: 1rem 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+.toast-container {
+  padding-top: 1.6rem !important;
+}
+
+/* ── Form Modal (ativo-form.html) ── */
+.form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  overflow-y: auto;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 720px;
+  transform: translateY(0);
+  animation: slideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.modal-glass {
+  background: linear-gradient(
+    145deg,
+    rgba(30, 30, 40, 0.95),
+    rgba(20, 20, 25, 0.98)
+  ) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.btn-close-custom {
+  position: absolute;
+  top: 1.6rem;
+  right: 1.6rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-close-custom:hover {
+  background: var(--danger);
+  color: white;
+  transform: rotate(90deg);
+}
+.form-control-lg,
+.form-select-lg {
+  font-size: 0.9rem;
+  padding: 0.7rem 0.9rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+/* ── Dropdown Glass ── */
+.dropdown-glass {
+  background: rgba(30, 30, 40, 0.9) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border) !important;
+}
+.dropdown-item {
+  color: var(--text-muted) !important;
+  transition: all 0.2s;
+}
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: white !important;
+}
+
+/* ── Form Labels ── */
+.form-label {
+  color: rgba(180, 195, 230, 0.92) !important;
+  letter-spacing: 0.4px;
+}
+
+/* ── Badge Tipo Ativo — cores por tipo (mantém bg-dark do Bootstrap) ── */
+.badge-tipo-acao {
+  border-color: rgba(77, 166, 255, 0.65) !important;
+  color: #4da6ff !important;
+}
+.badge-tipo-fii {
+  border-color: rgba(45, 214, 138, 0.65) !important;
+  color: #45d68a !important;
+}
+.badge-tipo-criptomoeda {
+  border-color: rgba(168, 85, 247, 0.65) !important;
+  color: #c084fc !important;
+}
+.badge-tipo-renda_fixa {
+  border-color: rgba(77, 217, 217, 0.65) !important;
+  color: #4dd9d9 !important;
+}
+.badge-tipo-etf {
+  border-color: rgba(191, 128, 255, 0.65) !important;
+  color: #bf80ff !important;
+}
+.badge-tipo-bdr {
+  border-color: rgba(255, 208, 64, 0.65) !important;
+  color: #ffd040 !important;
+}
+.badge-tipo-stock_internacional {
+  border-color: rgba(91, 173, 255, 0.65) !important;
+  color: #5badff !important;
+}
+.badge-tipo-imovel {
+  border-color: rgba(212, 148, 90, 0.65) !important;
+  color: #d4945a !important;
+}
+.badge-tipo-commodity {
+  border-color: rgba(250, 204, 21, 0.65) !important;
+  color: #facc15 !important;
+}
+.badge-ref-selic {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+.badge-tipo-outro {
+  border-color: rgba(160, 160, 180, 0.65) !important;
+  color: #a0a0b4 !important;
+}
+
+/* ── Dashboard Component Titles ── */
+.dash-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  margin-bottom: 0;
+}
+
+/* ── Badge Tipo Base (slightly larger in asset table) ── */
+.badge-tipo {
+  font-size: 0.75rem;
+  padding: 0.3em 0.7em;
+}

@@ -1,0 +1,154 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!--
+  Componente: dashboard/stat-widgets
+  3 cards de sumário: Saldo em Conta, Patrimônio Total, Gastos do Mês.
+  Depende de: ${saldoDinheiro}, ${patrimonioTotal}, ${despesasMensais}
+-->
+    <div th:fragment="stat-widgets" class="row g-4 mb-5">
+      <!-- Saldo em Conta -->
+      <div class="col-md-4">
+        <div
+          class="card stat-card h-100 p-0 overflow-hidden"
+          style="position: relative"
+        >
+          <i
+            class="bi bi-wallet2"
+            style="
+              position: absolute;
+              right: -5px;
+              top: -5px;
+              font-size: 7rem;
+              z-index: 0;
+              background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.12) 0%,
+                rgba(255, 255, 255, 0) 100%
+              );
+              background-clip: text;
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              pointer-events: none;
+              transform: rotate(-10deg);
+            "
+          ></i>
+          <div class="p-4 pb-0" style="position: relative; z-index: 1">
+            <div class="stat-label">
+              Saldo em Conta
+              <span
+                class="badge bg-success bg-opacity-10 text-success ms-2 small"
+                >FÍSICA</span
+              >
+            </div>
+            <div class="stat-value text-white d-flex align-items-baseline">
+              <span class="currency-symbol">R$</span>
+              <span
+                th:text="${#numbers.formatDecimal(saldoDinheiro, 1, 'POINT', 2, 'COMMA')}"
+                >12.450,00</span
+              >
+            </div>
+          </div>
+          <div style="height: 60px; margin-top: auto">
+            <canvas id="sparkline1"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patrimônio Total -->
+      <div class="col-md-4">
+        <div
+          class="card stat-card h-100 p-0 overflow-hidden"
+          style="position: relative"
+        >
+          <i
+            class="bi bi-bank"
+            style="
+              position: absolute;
+              right: -5px;
+              top: -5px;
+              font-size: 7rem;
+              z-index: 0;
+              background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.12) 0%,
+                rgba(255, 255, 255, 0) 100%
+              );
+              background-clip: text;
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              pointer-events: none;
+              transform: rotate(-10deg);
+            "
+          ></i>
+          <div class="p-4 pb-0" style="position: relative; z-index: 1">
+            <div class="stat-label">
+              Patrimônio Total
+              <span
+                class="badge bg-primary bg-opacity-10 text-primary ms-2 small"
+                >GLOBAL</span
+              >
+            </div>
+            <div class="stat-value text-white d-flex align-items-baseline">
+              <span class="currency-symbol">R$</span>
+              <span
+                th:text="${#numbers.formatDecimal(patrimonioTotal, 1, 'POINT', 2, 'COMMA')}"
+                >127.450,00</span
+              >
+            </div>
+          </div>
+          <div style="height: 60px; margin-top: auto">
+            <canvas id="sparkline2"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gastos do Mês -->
+      <div class="col-md-4">
+        <div
+          class="card stat-card h-100 p-0 overflow-hidden"
+          style="position: relative"
+        >
+          <i
+            class="bi bi-receipt"
+            style="
+              position: absolute;
+              right: -5px;
+              top: -5px;
+              font-size: 7rem;
+              z-index: 0;
+              background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.12) 0%,
+                rgba(255, 255, 255, 0) 100%
+              );
+              background-clip: text;
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              pointer-events: none;
+              transform: rotate(-10deg);
+            "
+          ></i>
+          <div class="p-4 pb-0" style="position: relative; z-index: 1">
+            <div class="stat-label">
+              Gastos do Mês
+              <span class="badge bg-danger bg-opacity-10 text-danger ms-2 small"
+                >DESPESAS</span
+              >
+            </div>
+            <div class="stat-value text-white d-flex align-items-baseline">
+              <span class="currency-symbol">R$</span>
+              <span
+                th:text="${#numbers.formatDecimal(despesasMensais, 1, 'POINT', 2, 'COMMA')}"
+                >4.820,00</span
+              >
+            </div>
+          </div>
+          <div style="height: 60px; margin-top: auto">
+            <canvas id="sparkline3"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

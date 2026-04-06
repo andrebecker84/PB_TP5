@@ -1,0 +1,64 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:fragment="layout(title, content, scripts)"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:replace="${title}">SAIKOO | Investimentos Inteligentes</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <link rel="stylesheet" th:href="@{/css/saikoo.css}" />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- ── Componente: Navegação lateral ── -->
+      <div th:replace="~{components/sidebar :: sidebar}"></div>
+
+      <div class="main-content">
+        <!-- ── Componente: Header superior ── -->
+        <div th:replace="~{components/topbar :: topbar}"></div>
+
+        <!-- ── Componente: Faixa de cotações ── -->
+        <div th:replace="~{components/ticker :: ticker}"></div>
+
+        <div class="page-content">
+          <!-- ── Componente: Notificações toast ── -->
+          <div th:replace="~{components/toasts :: toasts}"></div>
+
+          <!-- Conteúdo injetado por cada página -->
+          <div th:replace="${content}"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Scripts específicos de cada página -->
+    <th:block th:replace="${scripts} ?: ~{}"></th:block>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".ticker-logo").forEach((img) => {
+          img.onerror = () => (img.parentElement.style.display = "none");
+        });
+        document.querySelectorAll(".toast").forEach((el) => {
+          new bootstrap.Toast(el, { delay: 10000 }).show();
+        });
+      });
+    </script>
+  </body>
+</html>
