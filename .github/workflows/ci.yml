@@ -76,13 +76,15 @@ jobs:
       # em busca de vulnerabilidades (CWE). Executar após o build evita compilação
       # duplicada e garante que o código analisado é o mesmo que passou nos testes.
       # Os resultados ficam disponíveis em Security > Code scanning alerts.
+      # Justificativa: `build-mode: none` instrui o CodeQL a analisar o bytecode
+      # já compilado pelo `mvn clean verify` anterior, sem recompilar o projeto.
+      # Evita o erro "could not process any source code" causado pela ordem de
+      # execução (init após build) e elimina um build redundante.
       - name: Inicializar CodeQL (SAST)
         uses: github/codeql-action/init@v3
         with:
           languages: java
-
-      - name: Build para análise CodeQL
-        run: mvn -B compile -DskipTests
+          build-mode: none
 
       - name: Executar análise CodeQL
         uses: github/codeql-action/analyze@v3
