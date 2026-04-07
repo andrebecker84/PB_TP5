@@ -23,7 +23,7 @@ on:
   # após o CD concluir com sucesso. Se o deploy falhou, não faz sentido rodar
   # testes de fumaça contra um ambiente possivelmente inconsistente.
   workflow_run:
-    workflows: ["CD — Build & Deploy"]
+    workflows: ["CD — Entrega Contínua · SAIKOO (Build, Deploy & Release)"]
     types: [completed]
 
 # Justificativa: princípio do menor privilégio — testes pós-deploy só precisam
