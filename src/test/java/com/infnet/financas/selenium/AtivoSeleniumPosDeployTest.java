@@ -168,8 +168,9 @@ class AtivoSeleniumPosDeployTest {
         driver.get(baseUrl + "/ativos/novo");
 
         WebElement categorySelect = wait.until(
-                ExpectedConditions.presenceOfElementLocated(By.cssSelector("[name='categoria']")));
-        WebElement typeSelect = driver.findElement(By.cssSelector("[name='tipo']"));
+                ExpectedConditions.visibilityOfElementLocated(By.cssSelector("[name='categoria']")));
+        WebElement typeSelect = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(By.cssSelector("[name='tipo']")));
 
         assertTrue(categorySelect.isDisplayed(), "Select de categoria deve estar presente");
         assertTrue(typeSelect.isDisplayed(), "Select de tipo deve estar presente");
