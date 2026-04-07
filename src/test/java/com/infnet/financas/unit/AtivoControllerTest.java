@@ -1,5 +1,6 @@
 package com.infnet.financas.unit;
 
+import com.infnet.financas.config.SecurityConfig;
 import com.infnet.financas.controller.AtivoController;
 import com.infnet.financas.exception.RecursoDuplicadoException;
 import com.infnet.financas.model.AtivoFinanceiro;
@@ -11,6 +12,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AtivoController.class)
+@Import(SecurityConfig.class)
 class AtivoControllerTest {
 
     @Autowired
