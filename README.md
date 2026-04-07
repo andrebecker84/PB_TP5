@@ -153,6 +153,9 @@ Dispara automaticamente após o CD concluir deploy em staging.
 | SAST + qualidade com SonarCloud | Code smells, duplicação, complexidade e cobertura integrada ao GitHub |
 | DAST com OWASP ZAP | Vulnerabilidades em runtime detectadas por varredura passiva |
 | DTO `AtivoFinanceiroForm` | Elimina mass assignment — entidade JPA não exposta diretamente ao formulário |
+| CSRF via Spring Security | Token de sessão injetado automaticamente nos formulários Thymeleaf — elimina alerta ZAP |
+| `SecurityHeadersFilter` | CSP, X-Frame-Options, CORP, Permissions-Policy em todas as respostas HTTP |
+| `lombok.config` + `sonar.coverage.exclusions` | Alinha cobertura do SonarCloud com o gate local JaCoCo — código gerado excluído |
 | `fetch-depth: 0` no checkout | Histórico completo para o SonarCloud atribuir issues via git blame |
 | Logs personalizados | `logback-spring.xml` com perfis e arquivo rotativo `saikoo-<data>.log` |
 | `-B` em todos os `mvn` | Logs limpos no runner — sem ANSI colors e sem prompts interativos |
@@ -191,6 +194,7 @@ O perfil `dev` é ativado via variável de ambiente `SPRING_PROFILES_ACTIVE=dev`
 | --------- | ---------- | ------ | --- |
 | Backend | Java | 21 | Linguagem principal |
 | Backend | Spring Boot | 3.3.0 | Web, Data JPA, Thymeleaf, Validation |
+| Backend | Spring Security | 6.x | CSRF, headers de segurança HTTP |
 | Backend | H2 Database | — | Banco em memória para dev e testes |
 | Frontend | Thymeleaf | SSR | Templates com arquitetura de componentes |
 | Frontend | Bootstrap 5 + Icons | — | Layout responsivo e ícones |
@@ -199,6 +203,8 @@ O perfil `dev` é ativado via variável de ambiente `SPRING_PROFILES_ACTIVE=dev`
 | Testes | Selenium WebDriver | 4.21.0 | Automação E2E no browser e pós-deploy |
 | Testes | Jqwik | 1.8.5 | Property-based e fuzz testing |
 | Testes | JaCoCo | 0.8.12 | Cobertura de código (mínimo 90%) |
+| Segurança | Spring Security | 6.x | CSRF via token de sessão, sem autenticação |
+| Segurança | SecurityHeadersFilter | — | CSP, X-Frame-Options, CORP, Permissions-Policy |
 | Segurança | CodeQL | v4 | SAST — vulnerabilidades de segurança (CWE) |
 | Segurança | SonarCloud | — | SAST + qualidade — code smells, duplicação, cobertura |
 | Segurança | OWASP ZAP | — | DAST — varredura dinâmica passiva em runtime |
@@ -219,7 +225,8 @@ src/main/java/com/infnet/financas/
 ├── service/        # Regras de negócio + DashboardMetrics (Java 21 record)
 ├── repository/     # Spring Data JPA
 ├── model/          # AtivoFinanceiro (entidade JPA) + AtivoFinanceiroForm (DTO)
-└── exception/      # Exceções de domínio + @ControllerAdvice global
+├── exception/      # Exceções de domínio + @ControllerAdvice global
+└── config/         # SecurityConfig (CSRF) + SecurityHeadersFilter (HTTP headers)
 ```
 
 ---
@@ -325,6 +332,7 @@ PB_TP5/
 │   ├── main/
 │   │   ├── java/com/infnet/financas/
 │   │   │   ├── SaikooApplication.java
+│   │   │   ├── config/            # SecurityConfig + SecurityHeadersFilter
 │   │   │   ├── controller/
 │   │   │   ├── service/
 │   │   │   ├── repository/

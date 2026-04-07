@@ -26,6 +26,10 @@
         <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.sources>src/main/java,src/main/resources</sonar.sources>
         <sonar.tests>src/test/java</sonar.tests>
+        <!-- Espelha as exclusões do jacoco:check para alinhar a métrica de cobertura -->
+        <sonar.coverage.exclusions>
+            **/SaikooApplication.java
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
@@ -58,6 +62,12 @@
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- Spring Security — CSRF e infraestrutura de segurança HTTP -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

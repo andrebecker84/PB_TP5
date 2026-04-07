@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -72,6 +73,7 @@ class AtivoControllerTest {
     @Test
     void saveAssetShouldReturnFormOnError() throws Exception {
         mockMvc.perform(post("/ativos")
+                .with(csrf())
                 .param("ticker", "")
                 .param("nome", "Test"))
                 .andExpect(status().isOk())
@@ -83,6 +85,7 @@ class AtivoControllerTest {
         doThrow(new RecursoDuplicadoException("Already exists")).when(ativoService).save(any());
 
         mockMvc.perform(post("/ativos")
+                .with(csrf())
                 .param("ticker", "TEST")
                 .param("nome", "Test Asset")
                 .param("tipo", "ACAO")
@@ -98,6 +101,7 @@ class AtivoControllerTest {
     @Test
     void updateAssetShouldRedirectOnSuccess() throws Exception {
         mockMvc.perform(post("/ativos/1")
+                .with(csrf())
                 .param("ticker", "TEST")
                 .param("nome", "Test Asset")
                 .param("tipo", "ACAO")
@@ -114,6 +118,7 @@ class AtivoControllerTest {
         doThrow(new RecursoDuplicadoException("Already exists")).when(ativoService).update(eq(1L), any());
 
         mockMvc.perform(post("/ativos/1")
+                .with(csrf())
                 .param("ticker", "TEST")
                 .param("nome", "Test Asset")
                 .param("tipo", "ACAO")
@@ -156,6 +161,7 @@ class AtivoControllerTest {
     @Test
     void updateAssetShouldReturnFormOnValidationError() throws Exception {
         mockMvc.perform(post("/ativos/1")
+                .with(csrf())
                 .param("ticker", "")
                 .param("nome", ""))
                 .andExpect(status().isOk())
@@ -175,6 +181,7 @@ class AtivoControllerTest {
     })
     void saveAssetShouldReturnFormForAnyInvalidFieldCombination(String ticker, String nome) throws Exception {
         mockMvc.perform(post("/ativos")
+                .with(csrf())
                 .param("ticker", ticker)
                 .param("nome", nome))
                 .andExpect(status().isOk())

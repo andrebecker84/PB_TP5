@@ -60,6 +60,8 @@ O TP5 é a **entrega final** do projeto, incorporando:
 | Resumo de resultados | logs do runner | Markdown em `$GITHUB_STEP_SUMMARY` |
 | Refatorações | Estruturais (TP4) | Imutabilidade + polimorfismo + DTO (TP5) |
 | Segurança de formulários | entidade JPA exposta | DTO `AtivoFinanceiroForm` — sem mass assignment |
+| Proteção CSRF | — | Spring Security + token automático nos formulários Thymeleaf |
+| Headers de segurança HTTP | — | `SecurityHeadersFilter`: CSP, X-Frame-Options, CORP, Permissions-Policy |
 | Hospedagem | — | Render free tier via Docker multi-stage |
 
 ---
@@ -76,6 +78,9 @@ O TP5 aplica refatorações orientadas à imutabilidade, polimorfismo e reduçã
 | Código morto | Métodos e campos não referenciados remanescentes do TP3 | Remoção completa — nenhum campo ou método sem uso no classpath | YAGNI · Clean Code |
 | Separação consulta/modificador | Métodos que retornavam valor e modificavam estado simultaneamente | Separação explícita seguindo CQS: consultas não têm efeitos colaterais; modificadores não retornam valor | CQS (Meyer) |
 | Segurança de formulários | Entidade JPA `AtivoFinanceiro` recebida diretamente como `@ModelAttribute` | DTO `AtivoFinanceiroForm` com apenas os campos editáveis pelo usuário — `id` nunca exposto ao binding HTTP | Segurança · SRP · DTO pattern |
+| Proteção CSRF | Formulários sem token anti-CSRF — alerta crítico detectado pelo OWASP ZAP (DAST) | `SecurityConfig` habilita proteção CSRF via Spring Security; Thymeleaf injeta `_csrf` automaticamente em todos os formulários via `CsrfRequestDataValueProcessor` | Segurança · OWASP |
+| Headers de segurança HTTP | Ausência de CSP, X-Frame-Options, CORP e Permissions-Policy — múltiplos alertas ZAP | `SecurityHeadersFilter` (`OncePerRequestFilter`) adiciona todos os headers em cada resposta; CSP configurada para permitir CDNs utilizados (Bootstrap, Chart.js, Google Fonts) e APIs externas do ticker | Segurança · Defense in Depth |
+| Cobertura SonarCloud | Divergência entre o gate local JaCoCo (≥ 90%) e a cobertura exibida no SonarCloud (65%) | `lombok.config` com `addLombokGeneratedAnnotation = true` marca código gerado com `@lombok.Generated`; JaCoCo 0.8.x e SonarCloud excluem esse código automaticamente | Qualidade · Rastreabilidade |
 
 Cada refatoração foi validada pela suíte de testes, garantindo que nenhum comportamento externo foi alterado.
 
@@ -93,6 +98,7 @@ exception (GerenciadorExcecoesGlobal via @ControllerAdvice)
 
 ```
 src/main/java/com/infnet/financas/
+├── config/         # SecurityConfig (CSRF) + SecurityHeadersFilter (HTTP headers)
 ├── controller/     # Roteamento HTTP — zero lógica de negócio
 ├── service/        # Regras de negócio + DashboardMetrics record (Java 21)
 ├── repository/     # Spring Data JPA
@@ -386,6 +392,23 @@ Job 3: dast
   └── Upload: zap-dast-report (artefato HTML)
 ```
 
+### 5.7 (continuação). Correções Aplicadas a Partir dos Alertas ZAP
+
+O scan DAST gerou alertas classificados por categoria. Os de maior impacto foram corrigidos diretamente no código:
+
+| Alerta ZAP | Severidade | Correção aplicada |
+| ---------- | ---------- | ----------------- |
+| Absence of Anti-CSRF Tokens | Médio | `SecurityConfig` + Spring Security: token CSRF injetado automaticamente nos formulários Thymeleaf |
+| Session ID in URL Rewrite | Médio | `server.servlet.session.tracking-modes=cookie` em `application.properties` |
+| Cookie without SameSite Attribute | Baixo | `server.servlet.session.cookie.same-site=strict` |
+| Cookie without HttpOnly | Baixo | `server.servlet.session.cookie.http-only=true` |
+| Content Security Policy not set | Informativo | `SecurityHeadersFilter`: CSP configurada para CDNs e APIs externas |
+| Missing Anti-clickjacking Header | Informativo | `X-Frame-Options: DENY` via `SecurityHeadersFilter` |
+| X-Content-Type-Options missing | Informativo | `X-Content-Type-Options: nosniff` via `SecurityHeadersFilter` |
+| Cross-Origin-* headers missing | Informativo | COOP, CORP e Permissions-Policy via `SecurityHeadersFilter` |
+
+Alertas informacionais restantes (Sub Resource Integrity, Modern Web Application, Storable Content) são esperados para qualquer aplicação que utilize CDNs e não representam risco no contexto do projeto.
+
 ### 5.7. Resumos Markdown (`$GITHUB_STEP_SUMMARY`)
 
 **Problema sem esta prática:** Resultados de testes e cobertura ficam enterrados nos logs do runner, exigindo navegação manual para diagnóstico.
@@ -534,6 +557,20 @@ POST /ativos
   → AtivoFinanceiro (sem id — gerado pelo banco)
   → service.save(ativo)
 ```
+
+### `SecurityConfig` com `permitAll()` e CSRF habilitado
+
+**Problema:** O sistema não tem autenticação de usuário. Adicionar Spring Security com a configuração padrão redirecionaria todas as requisições para um formulário de login inexistente.
+
+**Solução:** `SecurityConfig` declara `permitAll()` para todas as rotas, desabilita `formLogin` e `httpBasic` (desnecessários), e mantém a proteção CSRF ativa. O Thymeleaf injeta o token automaticamente via `CsrfRequestDataValueProcessor` — zero alterações nos templates.
+
+Os testes MockMvc de POST em `AtivoControllerTest` foram atualizados para incluir `.with(csrf())`, que adiciona um token válido ao request simulado — testando o comportamento real com CSRF ativo.
+
+### `SecurityHeadersFilter` separado de `SecurityConfig`
+
+**Problema:** Poderia-se configurar headers diretamente em `HttpSecurity.headers()`. Mas misturar configuração de CSRF e de headers HTTP em um único bean viola o SRP e dificulta testes isolados.
+
+**Solução:** `SecurityHeadersFilter` (`OncePerRequestFilter`) concentra exclusivamente os headers HTTP defensivos. `SecurityConfig` concentra a política de autorização e CSRF. Cada classe tem uma única razão para mudar.
 
 ### `fetch-depth: 0` no checkout do CI
 
