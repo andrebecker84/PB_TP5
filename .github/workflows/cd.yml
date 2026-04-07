@@ -26,7 +26,7 @@ a# ─────────────────────────�
 # Justificativa: impede que código que falhou nos testes seja empacotado e
 # entregue. Sem essa dependência, CI e CD disparariam em paralelo no mesmo push.
 # ──────────────────────────────────────────────────────────────────────────────
-name: CD — Build & Deploy
+name: CD — Entrega Contínua · SAIKOO (Build, Deploy & Release)
 
 on:
   # Justificativa: `workflow_run` garante que o CD só inicia após o CI terminar
