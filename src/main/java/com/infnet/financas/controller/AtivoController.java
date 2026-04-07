@@ -27,8 +27,8 @@ public class AtivoController {
     private final AtivoFinanceiroService service;
 
     private static final String FORM_VIEW        = "ativo-form";
-    private static final String SUCCESS_MSG       = SUCCESS_MSG;
-    private static final String REDIRECT_ATIVOS   = REDIRECT_ATIVOS;
+    private static final String SUCCESS_MSG       = "successMessage";
+    private static final String REDIRECT_ATIVOS   = "redirect:/ativos";
 
     @ModelAttribute("requestURI")
     public String requestURI(HttpServletRequest request) {

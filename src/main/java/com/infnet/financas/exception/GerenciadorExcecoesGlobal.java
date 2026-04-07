@@ -10,7 +10,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @Slf4j
 public class GerenciadorExcecoesGlobal {
 
-    private static final String ERROR_MESSAGE = ERROR_MESSAGE;
+    private static final String ERROR_MESSAGE = "errorMessage";
     private static final String ERROR_VIEW    = "error";
 
     @ExceptionHandler(RecursoNaoEncontradoException.class)
