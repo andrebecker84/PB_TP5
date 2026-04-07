@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html
   lang="pt-BR"
   xmlns:th="http://www.thymeleaf.org"
@@ -29,6 +30,7 @@
                 <th>Nome do Ativo</th>
                 <th>Tipo</th>
                 <th>Categoria</th>
+                <th class="text-center">Data Aquisição</th>
                 <th class="text-end">Preço Médio</th>
                 <th class="text-end">Quantidade</th>
                 <th class="text-end">Total Investido</th>
@@ -61,6 +63,10 @@
                 </td>
                 <td th:text="${ativo.categoria}" class="small text-muted">
                   RENDA VARIAVEL
+                </td>
+                <td class="text-center small text-muted"
+                    th:text="${#temporals.format(ativo.dataUltimaOperacao, 'dd/MM/yyyy')}">
+                  --/--/----
                 </td>
                 <td class="text-end fw-semibold text-main">
                   <span class="currency-symbol">R$</span
@@ -102,7 +108,7 @@
                 </td>
               </tr>
               <tr th:if="${ativos.isEmpty()}">
-                <td colspan="8" class="text-center py-5">
+                <td colspan="9" class="text-center py-5">
                   <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
                   <p class="text-muted">
                     Seu portfólio está vazio. Comece adicionando seu primeiro

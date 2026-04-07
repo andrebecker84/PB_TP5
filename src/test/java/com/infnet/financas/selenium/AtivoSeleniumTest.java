@@ -4,7 +4,6 @@ import com.infnet.financas.model.AtivoFinanceiro;
 import com.infnet.financas.selenium.pageobjects.AtivoFormPage;
 import com.infnet.financas.selenium.pageobjects.AtivoListaPage;
 import com.infnet.financas.service.AtivoFinanceiroService;
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -54,7 +53,11 @@ class AtivoSeleniumTest {
 
     @BeforeAll
     static void setupClass() {
-        WebDriverManager.chromedriver().setup();
+        // Selenium Manager (embutido no Selenium 4.6+) detecta e baixa automaticamente
+        // o ChromeDriver compatível com a versão do Chrome instalada na máquina.
+        // WebDriverManager (bonigarcia) foi removido: não possui suporte imediato para
+        // builds do Chrome Dev/Canary que ainda não têm binário publicado no endpoint
+        // oficial, causando 404 e fallback para versão incompatível.
         try {
             Files.createDirectories(SCREENSHOTS_DIR);
         } catch (IOException e) {
@@ -275,12 +278,12 @@ class AtivoSeleniumTest {
     }
 
     /**
-     * Teste negativo: tentativa de cadastrar ticker duplicado deve exibir mensagem
-     * de erro.
+     * Modelo de aquisições: o mesmo ticker pode ser registrado múltiplas vezes,
+     * cada compra é um lote independente com sua data e valor próprios.
      */
     @Test
-    @DisplayName("shouldShowErrorForDuplicateTicker")
-    void shouldShowErrorForDuplicateTicker() {
+    @DisplayName("shouldAllowMultipleAcquisitionsForSameTicker")
+    void shouldAllowMultipleAcquisitionsForSameTicker() {
         String ticker = "SOL" + System.currentTimeMillis();
 
         driver.get(baseUrl + "/novo");
@@ -291,11 +294,11 @@ class AtivoSeleniumTest {
 
         driver.get(baseUrl + "/novo");
         formPage = new AtivoFormPage(driver);
-        formPage.fillForm(ticker, "CRIPTOMOEDA", "CRIPTODIVISA", "2000.00", "20", "2024-02-18");
-        takeScreenshot("shouldShowErrorForDuplicateTicker_FormFilled");
-        formPage.submit();
+        formPage.fillForm(ticker, "CRIPTOMOEDA", "CRIPTODIVISA", "2000.00", "20", "2024-03-10");
+        takeScreenshot("shouldAllowMultipleAcquisitions_SecondFormFilled");
+        AtivoListaPage listPage2 = formPage.submit();
 
-        assertThat(formPage.getErrorMessage(), containsString("Já existe um ativo com o ticker"));
-        takeScreenshot("shouldShowErrorForDuplicateTicker_ErrorToast");
+        assertThat(listPage2.getSuccessMessage(), containsString("Ativo adicionado ao portfólio"));
+        takeScreenshot("shouldAllowMultipleAcquisitions_SecondAcquisitionSuccess");
     }
 }

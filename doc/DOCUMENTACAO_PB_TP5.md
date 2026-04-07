@@ -51,6 +51,7 @@ O TP5 é a **entrega final** do projeto, incorporando:
 | Dimensão | TP4 | TP5 |
 | -------- | ---- | ---- |
 | Cobertura mínima | 85% | 90% |
+| Total de testes | ~50 | 72 (62 unitários/integração + 10 Selenium) |
 | Workflows | 2 (`ci.yml`, `cd.yml`) | 3 (+ `post-deploy.yml`) |
 | Ambientes de deploy | — | dev, staging, prod |
 | Aprovação manual | — | obrigatória para prod |
@@ -78,9 +79,11 @@ O TP5 aplica refatorações orientadas à imutabilidade, polimorfismo e reduçã
 | Código morto | Métodos e campos não referenciados remanescentes do TP3 | Remoção completa — nenhum campo ou método sem uso no classpath | YAGNI · Clean Code |
 | Separação consulta/modificador | Métodos que retornavam valor e modificavam estado simultaneamente | Separação explícita seguindo CQS: consultas não têm efeitos colaterais; modificadores não retornam valor | CQS (Meyer) |
 | Segurança de formulários | Entidade JPA `AtivoFinanceiro` recebida diretamente como `@ModelAttribute` | DTO `AtivoFinanceiroForm` com apenas os campos editáveis pelo usuário — `id` nunca exposto ao binding HTTP | Segurança · SRP · DTO pattern |
-| Proteção CSRF | Formulários sem token anti-CSRF — alerta crítico detectado pelo OWASP ZAP (DAST) | `SecurityConfig` habilita proteção CSRF via Spring Security; Thymeleaf injeta `_csrf` automaticamente em todos os formulários via `CsrfRequestDataValueProcessor` | Segurança · OWASP |
+| Proteção CSRF | Formulários sem token anti-CSRF — alerta crítico detectado pelo OWASP ZAP (DAST) | `SecurityConfig` habilita proteção CSRF via Spring Security; `CsrfTokenResolvingFilter` resolve o `Supplier<CsrfToken>` deferred do Spring Security 6 para `CsrfToken` concreto antes da renderização Thymeleaf, garantindo a injeção automática do campo `_csrf` | Segurança · OWASP · Spring Security 6 |
 | Headers de segurança HTTP | Ausência de CSP, X-Frame-Options, CORP e Permissions-Policy — múltiplos alertas ZAP | `SecurityHeadersFilter` (`OncePerRequestFilter`) adiciona todos os headers em cada resposta; CSP configurada para permitir CDNs utilizados (Bootstrap, Chart.js, Google Fonts) e APIs externas do ticker | Segurança · Defense in Depth |
 | Cobertura SonarCloud | Divergência entre o gate local JaCoCo (≥ 90%) e a cobertura exibida no SonarCloud (65%) | `lombok.config` com `addLombokGeneratedAnnotation = true` marca código gerado com `@lombok.Generated`; JaCoCo 0.8.x e SonarCloud excluem esse código automaticamente | Qualidade · Rastreabilidade |
+| Modelo de portfólio (constraint única por ticker) | `@Column(unique = true)` no `ticker` impedia registrar a mesma ação comprada em datas diferentes | Removida a constraint única: cada registro representa uma **aquisição independente** (lote de compra) com sua própria data, quantidade e valor — comportamento real de home broker. O portfólio exibe coluna "Data Aquisição" para cada linha. A verificação de duplicidade foi removida do `AtivoFinanceiroService` e os testes foram atualizados para validar múltiplas aquisições do mesmo ticker | DDD · Modelo de domínio realista |
+| Driver ChromeDriver em testes Selenium | `WebDriverManager.chromedriver().setup()` falhava com HTTP 404 em builds do Chrome Dev/Canary (versão 147) — sem binário publicado no endpoint oficial, resultando em fallback incompatível | Removida a dependência `io.github.bonigarcia:webdrivermanager` do `pom.xml`. O **Selenium Manager** (embutido no Selenium 4.6+) detecta e baixa automaticamente o ChromeDriver correto para qualquer versão do Chrome — local ou CI | Qualidade · Compatibilidade |
 
 Cada refatoração foi validada pela suíte de testes, garantindo que nenhum comportamento externo foi alterado.
 
@@ -112,7 +115,7 @@ O frontend adota arquitetura de componentes com Thymeleaf Fragments. `layout.htm
 
 ## 3. Suíte de Testes
 
-A suíte cobre a pirâmide completa de testes com 68+ casos e cobertura JaCoCo ≥ 90%.
+A suíte cobre a pirâmide completa de testes com **72 casos** (62 unitários/integração + 10 Selenium) e cobertura JaCoCo ≥ 90%.
 
 | Classe de Teste | Tipo | Casos |
 | --------------- | ---- | ----- |
@@ -167,9 +170,10 @@ push / pull_request
 │  1. Checkout completo (fetch-depth: 0)               │
 │  2. Setup Java 21 (Eclipse Temurin) + cache Maven    │
 │  3. mvn -B clean verify                              │
-│     -Dtest="!AtivoSeleniumTest"                      │
+│     -Dtest="!AtivoSeleniumTest,                      │
+│             !AtivoSeleniumPosDeployTest"              │
 │     ├── compila o projeto                            │
-│     ├── executa 50+ testes                           │
+│     ├── executa 62 testes unitários/integração       │
 │     └── jacoco:check — falha se < 90%                │
 │  4. SAST — CodeQL v4 (build-mode: none)              │
 │  5. SAST + qualidade — SonarCloud                    │
@@ -495,8 +499,8 @@ Cada job do CI escreve em `$GITHUB_STEP_SUMMARY`:
 
 | Métrica | Valor |
 | ------- | ----- |
-| Testes executados | 68 |
-| Aprovados | 68 |
+| Testes executados | 72 |
+| Aprovados | 72 |
 | Falhas | 0 |
 | Cobertura de linhas | 91,3% |
 ```
@@ -558,11 +562,11 @@ POST /ativos
   → service.save(ativo)
 ```
 
-### `SecurityConfig` com `permitAll()` e CSRF habilitado
+### `SecurityConfig` com `permitAll()`, CSRF habilitado e `CsrfTokenResolvingFilter`
 
-**Problema:** O sistema não tem autenticação de usuário. Adicionar Spring Security com a configuração padrão redirecionaria todas as requisições para um formulário de login inexistente.
+**Problema:** O sistema não tem autenticação de usuário. Adicionar Spring Security com a configuração padrão redirecionaria todas as requisições para um formulário de login inexistente. Além disso, o Spring Security 6 introduziu carregamento diferido (deferred) do token CSRF — armazena um `Supplier<CsrfToken>` no atributo de request em vez do `CsrfToken` concreto. O `CsrfRequestDataValueProcessor` do Spring MVC, utilizado pelo Thymeleaf para injetar o campo `_csrf` nos formulários via `th:action`, lê o atributo esperando um `CsrfToken` concreto; ao encontrar um Supplier, não injeta o campo — resultando em formulários sem o token e 403 em todo POST.
 
-**Solução:** `SecurityConfig` declara `permitAll()` para todas as rotas, desabilita `formLogin` e `httpBasic` (desnecessários), e mantém a proteção CSRF ativa. O Thymeleaf injeta o token automaticamente via `CsrfRequestDataValueProcessor` — zero alterações nos templates.
+**Solução:** `SecurityConfig` declara `permitAll()` para todas as rotas, desabilita `formLogin` e `httpBasic`, mantém a proteção CSRF ativa com `Customizer.withDefaults()`, e registra `CsrfTokenResolvingFilter` imediatamente após o `CsrfFilter` na cadeia de filtros do Spring Security. O `CsrfTokenResolvingFilter` (inner class estática de `SecurityConfig`) resolve o Supplier para o `CsrfToken` concreto e o armazena nos atributos de request antes que o Thymeleaf processe o template — garantindo a injeção automática do campo `_csrf` em todos os formulários sem nenhuma alteração nos templates.
 
 Os testes MockMvc de POST em `AtivoControllerTest` foram atualizados para incluir `.with(csrf())`, que adiciona um token válido ao request simulado — testando o comportamento real com CSRF ativo.
 
@@ -593,18 +597,18 @@ Os testes MockMvc de POST em `AtivoControllerTest` foram atualizados para inclui
 **Pré-requisitos:** Java 21+, Maven 3.9+, Google Chrome (para Selenium)
 
 ```bash
-# Iniciar a aplicação
+# Iniciar a aplicação (perfil dev ativo por padrão — H2 em memória)
 mvn spring-boot:run
 # Acesso: http://localhost:8080/ativos/dashboard
 
-# Suíte completa + verificação de cobertura
+# Suíte completa de 72 testes + gate JaCoCo ≥ 90%
 mvn clean verify
 
-# Apenas testes unitários e de integração
-mvn clean verify -Dtest="!AtivoSeleniumTest" -DfailIfNoTests=false
+# Apenas testes unitários e de integração (sem Selenium)
+mvn clean verify -Dtest="!AtivoSeleniumTest,!AtivoSeleniumPosDeployTest" -DfailIfNoTests=false
 
-# Apenas testes Selenium
-mvn test -Dtest=AtivoSeleniumTest -DfailIfNoTests=false
+# Apenas testes E2E Selenium
+mvn test -Dtest="AtivoSeleniumTest,AtivoSeleniumPosDeployTest" -DfailIfNoTests=false
 ```
 
 ### Via Pipeline (GitHub Actions)

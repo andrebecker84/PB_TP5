@@ -3,9 +3,14 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 
 # ─── Logs ─────────────────────────────────────────────────────────────────────
-logs/
+logs/*.log
+logs/*.log.*
 *.log
 *.log.*
+
+# ─── Artefatos de testes ──────────────────────────────────────────────────────
+# .jqwik-database: banco interno do Jqwik (property-based) — gerado em runtime.
+.jqwik-database
 
 # ─── Claude Code ──────────────────────────────────────────────────────────────
 # Arquivos de configuração local do Claude Code — não devem ser versionados.

@@ -166,7 +166,8 @@ jobs:
   # runner — se a lógica central quebrar, o job 1 já sinaliza o problema.
   #
   # O runner ubuntu-latest tem Google Chrome pré-instalado.
-  # O WebDriverManager (v5.8.0) detecta e baixa o ChromeDriver compatível.
+  # O Selenium Manager (embutido no Selenium 4.6+) detecta e baixa automaticamente
+  # o ChromeDriver compatível com a versão do Chrome do runner.
   # O AtivoSeleniumTest já configura `--headless` internamente, portanto
   # nenhuma configuração extra de display é necessária.
   # ────────────────────────────────────────────────────────────────────────────

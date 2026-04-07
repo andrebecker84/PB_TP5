@@ -2,7 +2,6 @@ package com.infnet.financas.selenium;
 
 import com.infnet.financas.model.AtivoFinanceiro;
 import com.infnet.financas.service.AtivoFinanceiroService;
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -54,7 +53,8 @@ class AtivoSeleniumPosDeployTest {
 
     @BeforeAll
     static void setupClass() {
-        WebDriverManager.chromedriver().setup();
+        // Selenium Manager (embutido no Selenium 4.6+) detecta e baixa automaticamente
+        // o ChromeDriver compatível com a versão do Chrome instalada na máquina.
         try {
             Files.createDirectories(SCREENSHOTS_DIR);
         } catch (IOException e) {
@@ -158,20 +158,20 @@ class AtivoSeleniumPosDeployTest {
     }
 
     /**
-     * Verifica que o formulário de novo ativo carrega com os selects de tipo e
-     * categoria preenchidos. Falha indica problema no binding de enums no model.
+     * Verifica que o formulário de novo ativo carrega com os selects de categoria
+     * e tipo presentes. Usa seletores por name (gerado por th:field) para garantir
+     * compatibilidade independente do id gerado pelo Thymeleaf.
      */
     @Test
     @DisplayName("shouldLoadNewAssetFormWithOptions")
     void shouldLoadNewAssetFormWithOptions() {
         driver.get(baseUrl + "/ativos/novo");
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("body")));
 
-        WebElement typeSelect = wait.until(
-                ExpectedConditions.presenceOfElementLocated(By.id("type")));
-        WebElement categorySelect = driver.findElement(By.id("category"));
+        WebElement categorySelect = wait.until(
+                ExpectedConditions.presenceOfElementLocated(By.cssSelector("[name='categoria']")));
+        WebElement typeSelect = driver.findElement(By.cssSelector("[name='tipo']"));
 
-        assertTrue(typeSelect.isDisplayed(), "Select de tipo deve estar presente");
         assertTrue(categorySelect.isDisplayed(), "Select de categoria deve estar presente");
+        assertTrue(typeSelect.isDisplayed(), "Select de tipo deve estar presente");
     }
 }

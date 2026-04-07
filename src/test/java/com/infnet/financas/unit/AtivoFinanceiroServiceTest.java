@@ -1,7 +1,6 @@
 package com.infnet.financas.unit;
 
 import com.infnet.financas.exception.RecursoNaoEncontradoException;
-import com.infnet.financas.exception.RecursoDuplicadoException;
 import com.infnet.financas.model.AtivoFinanceiro;
 import com.infnet.financas.repository.AtivoFinanceiroRepository;
 import com.infnet.financas.service.AtivoFinanceiroService;
@@ -63,7 +62,6 @@ class AtivoFinanceiroServiceTest {
     @Test
     void shouldSaveAssetSuccessfully() {
         ativo.setId(null);
-        when(repository.existsByTicker("BTC")).thenReturn(false);
         when(repository.save(any(AtivoFinanceiro.class))).thenReturn(ativo);
 
         AtivoFinanceiro saved = service.save(ativo);
@@ -89,22 +87,32 @@ class AtivoFinanceiroServiceTest {
     }
 
     @Test
-    void shouldThrowExceptionOnUpdateWhenNewTickerAlreadyExists() {
+    void shouldAllowUpdateWithAnyTickerValue() {
+        // Cada aquisição é independente — o ticker não é mais uma chave única no portfólio.
         AtivoFinanceiro updatedDetails = AtivoFinanceiro.builder()
                 .ticker("ETH")
+                .nome("Ethereum Atualizado")
+                .valorInvestido(new BigDecimal("8000.00"))
+                .quantidade(2.0)
                 .build();
 
         when(repository.findById(1L)).thenReturn(Optional.of(ativo));
-        when(repository.existsByTicker("ETH")).thenReturn(true);
+        when(repository.save(any(AtivoFinanceiro.class))).thenReturn(ativo);
 
-        assertThrows(RecursoDuplicadoException.class, () -> service.update(1L, updatedDetails));
+        assertDoesNotThrow(() -> service.update(1L, updatedDetails),
+                "Atualização deve ser permitida independentemente do ticker já existir em outra aquisição");
+        verify(repository).save(ativo);
     }
 
     @Test
-    void shouldThrowExceptionWhenTickerAlreadyExistsOnSave() {
+    void shouldAllowMultipleAcquisitionsForSameTicker() {
+        // Modelo de home broker: cada compra é um lote independente no portfólio.
         ativo.setId(null);
-        when(repository.existsByTicker("BTC")).thenReturn(true);
-        assertThrows(RecursoDuplicadoException.class, () -> service.save(ativo));
+        when(repository.save(any(AtivoFinanceiro.class))).thenReturn(ativo);
+
+        assertDoesNotThrow(() -> service.save(ativo),
+                "Múltiplas aquisições do mesmo ticker devem ser permitidas — cada compra é um lote independente");
+        verify(repository, times(1)).save(any(AtivoFinanceiro.class));
     }
 
     @Test

@@ -35,7 +35,7 @@
                 <h2
                   class="fw-bold mb-0 text-white"
                   th:text="${ativo.id == null ? 'Novo Investimento' : 'Editar Ativo'}"
-                ></h2>
+                >Ativo</h2>
                 <p class="text-white-50 mb-0 small">
                   Forneça os detalhes da sua operação financeira
                 </p>
@@ -121,7 +121,7 @@
                   ></div>
                 </div>
 
-                <!-- 4. Nome (Auto-preenchimento recomendado) -->
+                <!-- 4. Nome (editável — auto-preenchido ou digitado manualmente) -->
                 <div class="col-md-6">
                   <label
                     for="name"
@@ -131,15 +131,10 @@
                   <input
                     type="text"
                     id="name"
-                    class="form-control form-control-lg bg-dark border-secondary text-white-50"
+                    class="form-control form-control-lg bg-dark border-secondary text-white"
                     th:field="*{nome}"
                     th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid' : ''"
-                    placeholder="Auto-preenchido pelo sistema"
-                    readonly
-                    style="
-                      cursor: not-allowed;
-                      background-color: rgba(0, 0, 0, 0.2) !important;
-                    "
+                    placeholder="Auto-preenchido ou edite manualmente"
                   />
                   <div
                     class="invalid-feedback"
@@ -161,12 +156,14 @@
                       >R$</span
                     >
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputmode="decimal"
                       id="investedValue"
                       class="form-control form-control-lg bg-dark border-secondary text-white"
                       th:field="*{valorInvestido}"
                       th:classappend="${#fields.hasErrors('valorInvestido')} ? 'is-invalid' : ''"
+                      placeholder="0,00"
+                      autocomplete="off"
                     />
                   </div>
                   <div
@@ -185,10 +182,12 @@
                   <input
                     type="number"
                     step="any"
+                    min="0"
                     id="quantity"
                     class="form-control form-control-lg bg-dark border-secondary text-white"
                     th:field="*{quantidade}"
                     th:classappend="${#fields.hasErrors('quantidade')} ? 'is-invalid' : ''"
+                    placeholder="0"
                   />
                   <div
                     class="invalid-feedback"
@@ -201,7 +200,7 @@
                   <label
                     for="lastOperationDate"
                     class="form-label text-uppercase small fw-bold"
-                    >Data</label
+                    >Data da Aquisição</label
                   >
                   <input
                     type="date"
@@ -250,7 +249,7 @@
 
     <!-- Scripts específicos do formulário -->
     <th:block th:fragment="scripts">
-      <script th:inline="javascript">
+      <script>
         /* Mapeamento: categoria -> tipos disponíveis */
         const categoryToTypes = {
           RENDA_VARIAVEL: ["ACAO", "FII", "ETF"],
@@ -337,10 +336,16 @@
           GOLD11: "Trend Ouro Fundo de Índice",
         };
 
-        const categoryEl = document.getElementById("category");
-        const typeEl = document.getElementById("type");
-        const tickerEl = document.getElementById("ticker");
-        const nameEl = document.getElementById("name");
+        let categoryEl, typeEl, tickerEl, nameEl;
+
+        function initElements() {
+          // th:field sempre gera name="<path>", mas o id pode variar por versão
+          // do Thymeleaf. Seleção por name é garantida.
+          categoryEl = document.querySelector('[name="categoria"]');
+          typeEl     = document.querySelector('[name="tipo"]');
+          tickerEl   = document.querySelector('[name="ticker"]');
+          nameEl     = document.querySelector('[name="nome"]');
+        }
 
         function updateAssetTypes(keepValue = false) {
           const category = categoryEl.value;
@@ -411,17 +416,128 @@
         function resetFlow() {
           setTimeout(() => {
             updateAssetTypes();
+            initCurrencyField();
           }, 10);
         }
 
-        // Inicialização para caso de Edição ou Erros de Validação
-        globalThis.addEventListener("DOMContentLoaded", () => {
+        /* ── Máscara de moeda brasileira (valorInvestido) ────────────────── */
+
+        function formatBRL(raw) {
+          // Remove tudo que não for dígito
+          const digits = raw.replace(/\D/g, "");
+          if (!digits) return "";
+          // Interpreta os últimos 2 dígitos como centavos
+          const cents = parseInt(digits, 10);
+          return (cents / 100).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+        }
+
+        function onCurrencyInput(e) {
+          const input = e.target;
+          const formatted = formatBRL(input.value);
+          input.value = formatted;
+        }
+
+        function parseBRL(formatted) {
+          // "200.000,50" → "200000.50" (ponto decimal para Spring/BigDecimal)
+          return formatted.replace(/\./g, "").replace(",", ".");
+        }
+
+        function initCurrencyField() {
+          const valueEl = document.querySelector('[name="valorInvestido"]');
+          if (!valueEl) return;
+
+          // Formata o valor pré-carregado (modo edição)
+          if (valueEl.value) {
+            // Valor vindo do Spring pode ser "200000.50" — converte para BRL
+            const num = parseFloat(valueEl.value.replace(",", "."));
+            if (!isNaN(num)) {
+              valueEl.value = num.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              });
+            }
+          }
+
+          valueEl.addEventListener("input", onCurrencyInput);
+        }
+
+        /* ── Data padrão = hoje, máximo = hoje ─────────────────────────── */
+
+        function initDateField() {
+          const dateEl = document.querySelector('[name="dataUltimaOperacao"]');
+          if (!dateEl) return;
+          const today = new Date().toISOString().split("T")[0];
+          dateEl.setAttribute("max", today);
+          if (!dateEl.value) dateEl.value = today;
+        }
+
+        /* ── Validação client-side antes do submit ───────────────────────── */
+
+        function validateForm(e) {
+          const form = document.getElementById("assetForm");
+          const valueEl = document.querySelector('[name="valorInvestido"]');
+
+          // Converte máscara BRL → decimal antes de validar/enviar
+          if (valueEl && valueEl.value) {
+            const raw = parseBRL(valueEl.value);
+            valueEl.value = raw;
+          }
+
+          const required = [
+            { el: categoryEl,                         label: "Categoria" },
+            { el: typeEl,                             label: "Tipo de Ativo" },
+            { el: tickerEl,                           label: "Ticker" },
+            { el: nameEl,                             label: "Nome do Ativo" },
+            { el: valueEl,                            label: "Total (R$)" },
+            { el: document.querySelector('[name="quantidade"]'),          label: "Quantidade" },
+            { el: document.querySelector('[name="dataUltimaOperacao"]'),  label: "Data da Operação" },
+          ];
+
+          let valid = true;
+          required.forEach(({ el }) => {
+            if (!el) return;
+            if (!el.value || el.value.trim() === "") {
+              el.classList.add("is-invalid");
+              valid = false;
+            } else {
+              el.classList.remove("is-invalid");
+            }
+          });
+
+          if (!valid) {
+            e.preventDefault();
+            // Reaplica máscara se o submit foi cancelado
+            if (valueEl && valueEl.value) {
+              const num = parseFloat(valueEl.value);
+              if (!isNaN(num)) {
+                valueEl.value = num.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                });
+              }
+            }
+          }
+        }
+
+        // Inicialização — mesma estratégia do TP4 (window.addEventListener)
+        window.addEventListener("DOMContentLoaded", () => {
+          initElements();
+          if (!categoryEl || !typeEl || !tickerEl || !nameEl) return;
           if (categoryEl.value) {
             updateAssetTypes(true);
           } else {
             typeEl.disabled = true;
             tickerEl.disabled = true;
           }
+
+          initCurrencyField();
+          initDateField();
+
+          const form = document.getElementById("assetForm");
+          if (form) form.addEventListener("submit", validateForm);
         });
       </script>
     </th:block>

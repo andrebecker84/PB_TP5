@@ -75,7 +75,6 @@ class CenariosAdversosTest {
         String maliciousTicker = "'; DROP TABLE ativo_financeiro; --";
         AtivoFinanceiro ativo = buildAtivo(maliciousTicker);
 
-        when(repository.existsByTicker(anyString())).thenReturn(false);
         when(repository.save(any(AtivoFinanceiro.class))).thenAnswer(inv -> {
             AtivoFinanceiro a = inv.getArgument(0);
             a.setId(1L);
@@ -86,7 +85,6 @@ class CenariosAdversosTest {
 
         assertEquals(maliciousTicker, saved.getTicker(),
                 "Ticker com tentativa de SQL injection deve ser persistido como string literal");
-        verify(repository).existsByTicker(maliciousTicker);
         verify(repository, never()).deleteAll();
     }
 
@@ -101,7 +99,6 @@ class CenariosAdversosTest {
         AtivoFinanceiro ativo = buildAtivo("XSS01");
         ativo.setNome(xssNome);
 
-        when(repository.existsByTicker("XSS01")).thenReturn(false);
         when(repository.save(any(AtivoFinanceiro.class))).thenAnswer(inv -> {
             AtivoFinanceiro a = inv.getArgument(0);
             a.setId(1L);
@@ -123,7 +120,6 @@ class CenariosAdversosTest {
         String tickerLongo = "A".repeat(500);
         AtivoFinanceiro ativo = buildAtivo(tickerLongo);
 
-        when(repository.existsByTicker(tickerLongo)).thenReturn(false);
         when(repository.save(any(AtivoFinanceiro.class))).thenAnswer(inv -> {
             AtivoFinanceiro a = inv.getArgument(0);
             a.setId(1L);
@@ -179,7 +175,6 @@ class CenariosAdversosTest {
         AtivoFinanceiro ativo = buildAtivo("OURO0");
         ativo.setValorInvestido(BigDecimal.ZERO);
 
-        when(repository.existsByTicker("OURO0")).thenReturn(false);
         when(repository.save(any(AtivoFinanceiro.class))).thenAnswer(inv -> {
             AtivoFinanceiro a = inv.getArgument(0);
             a.setId(1L);

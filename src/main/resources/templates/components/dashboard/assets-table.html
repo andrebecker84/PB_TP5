@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+  <head><title>Tabela de Ativos | SAIKOO</title></head>
   <body>
     <!--
   Componente: dashboard/assets-table
@@ -24,6 +25,7 @@
                   <th>Nome</th>
                   <th>Tipo</th>
                   <th>Categoria</th>
+                  <th class="text-center">Data Aquisição</th>
                   <th class="text-end">Preço Médio</th>
                   <th class="text-end">Quantidade</th>
                   <th class="text-end">Total Investido</th>
@@ -56,6 +58,10 @@
                   </td>
                   <td th:text="${ativo.categoria}" class="small">
                     RENDA_VARIAVEL
+                  </td>
+                  <td class="text-center small text-muted"
+                      th:text="${#temporals.format(ativo.dataUltimaOperacao, 'dd/MM/yyyy')}">
+                    --/--/----
                   </td>
                   <td class="text-end fw-semibold text-main">
                     <span class="currency-symbol">R$</span
@@ -145,7 +151,7 @@
 
                 <!-- CTA vazio -->
                 <tr th:if="${ativos.isEmpty()}">
-                  <td colspan="7" class="text-center py-4">
+                  <td colspan="8" class="text-center py-4">
                     <p class="text-muted small mb-3">
                       Seu portfólio real está vazio.
                     </p>

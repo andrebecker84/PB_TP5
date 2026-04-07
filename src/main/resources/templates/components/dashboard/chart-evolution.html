@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+  <head><title>Evolução do Patrimônio | SAIKOO</title></head>
   <body>
     <!--
   Componente: dashboard/chart-evolution
@@ -25,59 +26,39 @@
                 class="dropdown-menu dropdown-menu-end dropdown-glass shadow-lg border-0"
               >
                 <li>
-                  <a
+                  <button
+                    type="button"
                     class="dropdown-item small py-2"
-                    href="#"
-                    onclick="
-                      updateChartPeriod('lineChart', 'day');
-                      return false;
-                    "
-                    >Intraday</a
-                  >
+                    onclick="updateChartPeriod('lineChart', 'day')"
+                  >Intraday</button>
                 </li>
                 <li>
-                  <a
+                  <button
+                    type="button"
                     class="dropdown-item small py-2"
-                    href="#"
-                    onclick="
-                      updateChartPeriod('lineChart', 'week');
-                      return false;
-                    "
-                    >1S</a
-                  >
+                    onclick="updateChartPeriod('lineChart', 'week')"
+                  >1S</button>
                 </li>
                 <li>
-                  <a
+                  <button
+                    type="button"
                     class="dropdown-item small py-2"
-                    href="#"
-                    onclick="
-                      updateChartPeriod('lineChart', 'month');
-                      return false;
-                    "
-                    >1M</a
-                  >
+                    onclick="updateChartPeriod('lineChart', 'month')"
+                  >1M</button>
                 </li>
                 <li>
-                  <a
+                  <button
+                    type="button"
                     class="dropdown-item small py-2"
-                    href="#"
-                    onclick="
-                      updateChartPeriod('lineChart', '6months');
-                      return false;
-                    "
-                    >6M</a
-                  >
+                    onclick="updateChartPeriod('lineChart', '6months')"
+                  >6M</button>
                 </li>
                 <li>
-                  <a
+                  <button
+                    type="button"
                     class="dropdown-item small py-2"
-                    href="#"
-                    onclick="
-                      updateChartPeriod('lineChart', 'year');
-                      return false;
-                    "
-                    >1A</a
-                  >
+                    onclick="updateChartPeriod('lineChart', 'year')"
+                  >1A</button>
                 </li>
               </ul>
             </div>

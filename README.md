@@ -48,7 +48,9 @@
 
 ## Sobre o Projeto
 
-O SAIKOO é um sistema CRUD de gestão financeira pessoal construído com Java 21 e Spring Boot 3.3, cobrindo o portfólio completo do investidor: Ações, FIIs, Criptomoedas, Renda Fixa, Precatórios e Ativos Reais. A interface usa dark theme inspirado em terminais profissionais de home broker.
+O SAIKOO é um sistema de gestão financeira pessoal construído com Java 21 e Spring Boot 3.3, cobrindo o portfólio completo do investidor: Ações, FIIs, Criptomoedas, Renda Fixa, Precatórios e Ativos Reais. A interface usa dark theme inspirado em terminais profissionais de home broker.
+
+O modelo de portfólio registra cada compra como uma **aquisição independente** — o mesmo ticker (ex: PETR4) pode aparecer múltiplas vezes com datas, quantidades e valores distintos, refletindo o comportamento real de um home broker.
 
 O **TP5** é a entrega final do projeto, incorporando refatorações orientadas à imutabilidade e polimorfismo, pipeline CI/CD expandida com SAST/DAST, deploy automático para múltiplos ambientes (dev, staging, prod) com aprovação manual para produção, testes pós-deploy com Selenium e monitoramento com logs personalizados e badges de status.
 
@@ -69,9 +71,9 @@ push / pull_request
   Job 1: testes-unitarios-integracao   (timeout: 15 min)
   ├── Checkout completo (fetch-depth: 0 — histórico para SonarCloud)
   ├── Setup Java 21 (Temurin) + cache Maven
-  ├── mvn -B clean verify -Dtest="!AtivoSeleniumTest"
+  ├── mvn -B clean verify -Dtest="!AtivoSeleniumTest,!AtivoSeleniumPosDeployTest"
   │   ├── compila o projeto
-  │   ├── executa 50+ testes unitários e de integração
+  │   ├── executa 62 testes unitários e de integração
   │   └── JaCoCo gate — falha o build se cobertura < 90%
   ├── Análise SAST com CodeQL v4 (build-mode: none)
   ├── Análise SAST + qualidade com SonarCloud
@@ -154,6 +156,7 @@ Dispara automaticamente após o CD concluir deploy em staging.
 | DAST com OWASP ZAP | Vulnerabilidades em runtime detectadas por varredura passiva |
 | DTO `AtivoFinanceiroForm` | Elimina mass assignment — entidade JPA não exposta diretamente ao formulário |
 | CSRF via Spring Security | Token de sessão injetado automaticamente nos formulários Thymeleaf — elimina alerta ZAP |
+| `CsrfTokenResolvingFilter` | Resolve o `Supplier<CsrfToken>` deferred do Spring Security 6 para `CsrfToken` concreto antes da renderização Thymeleaf — compatibilidade obrigatória em Spring Boot 3.3 |
 | `SecurityHeadersFilter` | CSP, X-Frame-Options, CORP, Permissions-Policy em todas as respostas HTTP |
 | `lombok.config` + `sonar.coverage.exclusions` | Alinha cobertura do SonarCloud com o gate local JaCoCo — código gerado excluído |
 | `fetch-depth: 0` no checkout | Histórico completo para o SonarCloud atribuir issues via git blame |
@@ -200,7 +203,7 @@ O perfil `dev` é ativado via variável de ambiente `SPRING_PROFILES_ACTIVE=dev`
 | Frontend | Bootstrap 5 + Icons | — | Layout responsivo e ícones |
 | Frontend | Chart.js | — | Gráficos interativos no dashboard |
 | Testes | JUnit 5 + Mockito | — | Testes unitários e de integração |
-| Testes | Selenium WebDriver | 4.21.0 | Automação E2E no browser e pós-deploy |
+| Testes | Selenium WebDriver | 4.21.0 | Automação E2E no browser e pós-deploy (via Selenium Manager embutido) |
 | Testes | Jqwik | 1.8.5 | Property-based e fuzz testing |
 | Testes | JaCoCo | 0.8.12 | Cobertura de código (mínimo 90%) |
 | Segurança | Spring Security | 6.x | CSRF via token de sessão, sem autenticação |
@@ -271,7 +274,8 @@ src/main/java/com/infnet/financas/
 git clone https://github.com/andrebecker84/PB_TP5.git
 cd PB_TP5
 
-# Iniciar a aplicação
+# Iniciar a aplicação (com H2 em memória — sem PostgreSQL necessário)
+# O perfil dev é ativado automaticamente pelo plugin Maven
 mvn spring-boot:run
 ```
 
@@ -283,14 +287,14 @@ mvn spring-boot:run
 | `http://localhost:8080/h2-console` | Console H2 (dev) |
 
 ```bash
-# Suíte completa + relatório JaCoCo
+# Suíte completa de 72 testes + gate JaCoCo ≥ 90%
 mvn clean verify
 
 # Apenas testes unitários e de integração (sem Selenium)
-mvn clean verify -Dtest="!AtivoSeleniumTest" -DfailIfNoTests=false
+mvn clean verify -Dtest="!AtivoSeleniumTest,!AtivoSeleniumPosDeployTest" -DfailIfNoTests=false
 
-# Apenas testes Selenium
-mvn test -Dtest=AtivoSeleniumTest -DfailIfNoTests=false
+# Apenas testes E2E Selenium
+mvn test -Dtest="AtivoSeleniumTest,AtivoSeleniumPosDeployTest" -DfailIfNoTests=false
 ```
 
 **Artefatos locais após `mvn clean verify`:**
@@ -300,18 +304,6 @@ mvn test -Dtest=AtivoSeleniumTest -DfailIfNoTests=false
 | Cobertura JaCoCo | `target/site/jacoco/index.html` |
 | Screenshots Selenium | `src/test/resources/screenshots/` |
 | Log da aplicação | `logs/saikoo-<data-hora>.log` |
-
----
-
-## Demonstração Visual
-
-<div align="center">
-
-![Dashboard SAIKOO](src/test/resources/screenshots/shouldVisitDashboardWithCharts_20260322-201443.png)
-
-*Dashboard financeiro capturado durante execução do teste E2E Selenium — `shouldVisitDashboardWithCharts`*
-
-</div>
 
 ---
 

@@ -32,7 +32,7 @@ public class AtivoFinanceiro {
     private String nome;
 
     @NotBlank(message = "O código/ticker é obrigatório")
-    @Column(unique = true)
+    @Column
     private String ticker;
 
     @NotNull(message = "O tipo de ativo é obrigatório")

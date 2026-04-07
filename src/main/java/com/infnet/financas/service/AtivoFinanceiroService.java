@@ -41,13 +41,11 @@ public class AtivoFinanceiroService {
 
     @Transactional
     public AtivoFinanceiro save(AtivoFinanceiro ativo) {
-        log.info("Tentativa de salvar ativo com ticker: {}", ativo.getTicker());
-        if (ativo.getId() == null && repository.existsByTicker(ativo.getTicker())) {
-            log.warn("Duplicidade detectada para o ticker: {}", ativo.getTicker());
-            throw new RecursoDuplicadoException("Já existe um ativo com o ticker: " + ativo.getTicker());
-        }
+        log.info("Registrando nova aquisição — ticker: {}", ativo.getTicker());
+        // Cada registro representa uma aquisição (lote de compra) independente.
+        // O mesmo ticker pode aparecer múltiplas vezes no portfólio com datas distintas.
         AtivoFinanceiro saved = repository.save(ativo);
-        log.info("Ativo salvo com sucesso. ID={}, ticker={}", saved.getId(), saved.getTicker());
+        log.info("Aquisição registrada com sucesso. ID={}, ticker={}", saved.getId(), saved.getTicker());
         return saved;
     }
 
@@ -58,12 +56,6 @@ public class AtivoFinanceiroService {
         // proxy Spring AOP do @Transactional desta própria chamada seja preservado.
         AtivoFinanceiro ativo = repository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Ativo não encontrado com ID: " + id));
-
-        boolean tickerAlterado = !ativo.getTicker().equals(detalhesAtivo.getTicker());
-        if (tickerAlterado && repository.existsByTicker(detalhesAtivo.getTicker())) {
-            log.warn("Ticker já existe: {} — atualização de ID={} cancelada.", detalhesAtivo.getTicker(), id);
-            throw new RecursoDuplicadoException("O novo ticker já está em uso: " + detalhesAtivo.getTicker());
-        }
 
         // Delega a atualização dos campos ao próprio modelo (SRP + CQS).
         ativo.updateFrom(detalhesAtivo);

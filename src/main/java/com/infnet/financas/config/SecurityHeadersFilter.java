@@ -33,8 +33,8 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
             "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
             "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
-            "connect-src 'self' https://api.coingecko.com https://economia.awesomeapi.com.br; " +
-            "img-src 'self' data:; " +
+            "connect-src 'self' https://cdn.jsdelivr.net https://api.coingecko.com https://economia.awesomeapi.com.br; " +
+            "img-src 'self' data: https://images.unsplash.com; " +
             "frame-ancestors 'none'";
 
     @Override
@@ -47,6 +47,7 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
         response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
         response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
         response.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+        response.setHeader("X-Robots-Tag", "noindex, nofollow");
         chain.doFilter(request, response);
     }
 }

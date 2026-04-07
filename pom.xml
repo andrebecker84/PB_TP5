@@ -17,7 +17,6 @@
     <properties>
         <java.version>21</java.version>
         <selenium.version>4.21.0</selenium.version>
-        <webdrivermanager.version>5.8.0</webdrivermanager.version>
         <jqwik.version>1.8.5</jqwik.version>
         <!-- SonarCloud -->
         <sonar.organization>andrebecker84</sonar.organization>
@@ -95,12 +94,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.github.bonigarcia</groupId>
-            <artifactId>webdrivermanager</artifactId>
-            <version>${webdrivermanager.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>net.jqwik</groupId>
             <artifactId>jqwik</artifactId>
             <version>${jqwik.version}</version>
@@ -119,6 +112,9 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <profiles>
+                        <profile>dev</profile>
+                    </profiles>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
